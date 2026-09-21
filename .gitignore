@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+
+# Android / Gradle (por si se agrega codigo de ejemplo en alguna sesion)
+build/
+.gradle/
+*.apk
+*.aab
+local.properties
+.cxx/
+
+# Python (scripts auxiliares)
+__pycache__/
+*.pyc
+
+# Archivos temporales de Office
+~$*
