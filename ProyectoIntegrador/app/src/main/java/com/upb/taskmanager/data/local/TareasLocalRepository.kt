@@ -1,5 +1,7 @@
 package com.upb.taskmanager.data.local
 
+import kotlinx.coroutines.flow.Flow
+
 /**
  * Sesion 21: CRUD con Room.
  *
@@ -9,10 +11,16 @@ package com.upb.taskmanager.data.local
  * la puerta abierta para que, en la Sesion 23, [com.upb.taskmanager.model.GestorDeTareas]
  * use este repositorio como su fuente de datos sin que el resto de la app
  * note el cambio de una lista en memoria a una base de datos real.
+ *
+ * Sesion 23: se agrega `observarTareas`, que reexpone el `Flow` reactivo del
+ * DAO para que capas superiores (el ViewModel) puedan usarlo como fuente de
+ * verdad en vez de pedir la lista manualmente cada vez.
  */
 class TareasLocalRepository(private val tareaDao: TareaDao) {
 
     suspend fun obtenerTareas(): List<TareaEntity> = tareaDao.obtenerTodas()
+
+    fun observarTareas(): Flow<List<TareaEntity>> = tareaDao.observarTodas()
 
     /** Inserta una tarea nueva y devuelve la entidad ya con su id autogenerado. */
     suspend fun agregarTarea(titulo: String): TareaEntity {

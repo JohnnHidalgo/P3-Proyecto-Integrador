@@ -1,16 +1,20 @@
 package com.upb.taskmanager.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.upb.taskmanager.data.local.TareaDatabase
+import com.upb.taskmanager.data.local.TareasLocalRepository
 import com.upb.taskmanager.data.remote.TareasRemoteRepository
 import com.upb.taskmanager.model.GestorDeTareas
 import com.upb.taskmanager.util.LONGITUD_MINIMA_TITULO
 import com.upb.taskmanager.util.Resultado
 import com.upb.taskmanager.util.tituloValido
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -18,88 +22,112 @@ import kotlinx.coroutines.launch
  *
  * ViewModel de la pantalla de tareas. Envuelve un [GestorDeTareas] (la logica
  * de negocio) y expone su estado a la UI. El nombre de la clase se mantiene
- * `TareasViewModel` durante todo el curso, aunque su implementacion interna
- * cambie mas adelante (Sesion 23: pasara a observar Room mediante `Flow`).
+ * `TareasViewModel` durante todo el curso.
  *
- * Sesion 13: el estado se modela como un unico [TareasUiState] envuelto en un
- * [StateFlow], en vez de una `mutableStateListOf` suelta.
+ * Sesion 13: el estado se modela como un unico [TareasUiState].
  *
- * Sesion 15: al crearse, el ViewModel sincroniza una vez con el repositorio
- * remoto ([TareasRemoteRepository]) usando `viewModelScope.launch`, y expone
- * `cargando = true` mientras esa llamada de red esta en curso.
+ * Sesion 15/16: al crearse, el ViewModel puede sincronizar con el
+ * repositorio remoto ([TareasRemoteRepository]), reportando `cargando` y
+ * `mensajeError` mientras esa llamada de red esta en curso.
  *
- * Sesion 16: tanto la carga remota como el formulario de agregar tarea usan
- * [Resultado] / [tituloValido] para reportar errores en `uiState.mensajeError`
- * en vez de fallar en silencio o lanzar una excepcion hacia la UI.
+ * Sesion 23: Room + MVVM final. El ViewModel pasa a extender [AndroidViewModel]
+ * porque ahora necesita un `Context` (a traves de `Application`) para
+ * construir la base de datos Room. `GestorDeTareas` ya no guarda las tareas
+ * en memoria: `uiState.tareas` se construye combinando el `Flow` de Room
+ * (`gestorDeTareas.observarTareas()`, la fuente de verdad) con el estado de
+ * carga y de error, que siguen viviendo solo en el ViewModel.
  */
-class TareasViewModel(
-    private val tareasRemoteRepository: TareasRemoteRepository = TareasRemoteRepository()
-) : ViewModel() {
+class TareasViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val gestorDeTareas = GestorDeTareas()
+    private val tareasRemoteRepository = TareasRemoteRepository()
 
-    private val _uiState = MutableStateFlow(TareasUiState(tareas = gestorDeTareas.obtenerTareas()))
+    private val tareasLocalRepository = TareasLocalRepository(
+        TareaDatabase.obtenerInstancia(application).tareaDao()
+    )
 
-    /** Estado de UI de solo lectura, observable desde Compose con `collectAsState()`. */
-    val uiState: StateFlow<TareasUiState> = _uiState.asStateFlow()
+    private val gestorDeTareas = GestorDeTareas(tareasLocalRepository)
+
+    private val _cargando = MutableStateFlow(false)
+    private val _mensajeError = MutableStateFlow<String?>(null)
+
+    /**
+     * Estado de UI de solo lectura. Combina tres fuentes: las tareas que
+     * llegan de Room (siempre actualizadas), y el estado de carga/error que
+     * administra este ViewModel. `stateIn` convierte ese combinado en un
+     * `StateFlow` "caliente" que sigue vivo mientras haya al menos un
+     * observador (con un margen de 5 segundos para sobrevivir a rotaciones
+     * de pantalla, `SharingStarted.WhileSubscribed(5000)`).
+     */
+    val uiState: StateFlow<TareasUiState> = combine(
+        gestorDeTareas.observarTareas(),
+        _cargando,
+        _mensajeError
+    ) { tareas, cargando, mensajeError ->
+        TareasUiState(tareas = tareas, cargando = cargando, mensajeError = mensajeError)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = TareasUiState(cargando = true)
+    )
 
     init {
-        cargarTareasRemotas()
+        sincronizarConRepositorioRemotoSiHaceFalta()
     }
 
     /**
      * Agrega una tarea nueva si el titulo es valido (ver [tituloValido]).
-     * Devuelve `true` si se agrego correctamente, o `false` si se rechazo por
+     * Devuelve `true` si la operacion se acepto, o `false` si se rechazo por
      * una validacion (en ese caso, `uiState.mensajeError` queda con el motivo).
      */
     fun agregarTarea(titulo: String): Boolean {
         if (!tituloValido(titulo)) {
-            _uiState.update {
-                it.copy(mensajeError = "El titulo debe tener al menos $LONGITUD_MINIMA_TITULO caracteres.")
-            }
+            _mensajeError.value = "El titulo debe tener al menos $LONGITUD_MINIMA_TITULO caracteres."
             return false
         }
-        gestorDeTareas.agregarTarea(titulo)
-        sincronizarTareas()
+        viewModelScope.launch {
+            gestorDeTareas.agregarTarea(titulo)
+            _mensajeError.value = null
+        }
         return true
     }
 
-    /** Alterna el estado completada/pendiente de una tarea y refresca el estado de UI. */
+    /** Alterna el estado completada/pendiente de una tarea. */
     fun alternarCompletada(id: Int) {
-        gestorDeTareas.alternarCompletada(id)
-        sincronizarTareas()
-    }
-
-    /**
-     * Trae tareas de ejemplo desde el repositorio remoto y las agrega al
-     * gestor local. Se ejecuta en `viewModelScope`, un `CoroutineScope` que
-     * el propio ViewModel cancela automaticamente cuando se destruye.
-     */
-    private fun cargarTareasRemotas() {
         viewModelScope.launch {
-            _uiState.update { it.copy(cargando = true, mensajeError = null) }
-            when (val resultado = tareasRemoteRepository.obtenerTareasRemotas()) {
-                is Resultado.Exito -> {
-                    for (tareaRemota in resultado.datos) {
-                        val tareaCreada = gestorDeTareas.agregarTarea(tareaRemota.title)
-                        if (tareaRemota.completed) {
-                            gestorDeTareas.alternarCompletada(tareaCreada.id)
-                        }
-                    }
-                    _uiState.update {
-                        it.copy(tareas = gestorDeTareas.obtenerTareas(), cargando = false)
-                    }
-                }
-                is Resultado.Error -> {
-                    _uiState.update { it.copy(cargando = false, mensajeError = resultado.mensaje) }
-                }
-            }
+            gestorDeTareas.alternarCompletada(id)
         }
     }
 
-    private fun sincronizarTareas() {
-        _uiState.update { estadoActual ->
-            estadoActual.copy(tareas = gestorDeTareas.obtenerTareas(), mensajeError = null)
+    /**
+     * Trae tareas de ejemplo desde el repositorio remoto solo la primera vez
+     * que la app se ejecuta (cuando la tabla de Room todavia esta vacia).
+     *
+     * Esto es importante porque, a diferencia de las sesiones anteriores
+     * (donde `GestorDeTareas` vivia en memoria y se reiniciaba en cada
+     * apertura de la app), ahora los datos quedan guardados en Room: si se
+     * volviera a insertar la lista remota en cada inicio, se duplicarian las
+     * tareas cada vez que se abre la app.
+     */
+    private fun sincronizarConRepositorioRemotoSiHaceFalta() {
+        viewModelScope.launch {
+            val hayTareasGuardadas = tareasLocalRepository.obtenerTareas().isNotEmpty()
+            if (hayTareasGuardadas) return@launch
+
+            _cargando.value = true
+            when (val resultado = tareasRemoteRepository.obtenerTareasRemotas()) {
+                is Resultado.Exito -> {
+                    for (tareaRemota in resultado.datos) {
+                        gestorDeTareas.agregarTarea(
+                            titulo = tareaRemota.title,
+                            completadaInicial = tareaRemota.completed
+                        )
+                    }
+                }
+                is Resultado.Error -> {
+                    _mensajeError.value = resultado.mensaje
+                }
+            }
+            _cargando.value = false
         }
     }
 }
