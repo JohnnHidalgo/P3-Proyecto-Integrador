@@ -60,6 +60,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     // Sesion 08: Navigation Compose, para el grafo de navegacion entre pantallas.
     implementation("androidx.navigation:navigation-compose:2.6.0")
+    // Sesion 12: integracion de ViewModel con Compose (funcion viewModel()).
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

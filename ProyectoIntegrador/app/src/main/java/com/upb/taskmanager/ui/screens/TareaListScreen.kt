@@ -26,44 +26,48 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.upb.taskmanager.model.GestorDeTareas
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.upb.taskmanager.model.Tarea
 import com.upb.taskmanager.ui.theme.TaskManagerTheme
+import com.upb.taskmanager.viewmodel.TareasViewModel
 
 /**
  * Sesion 07: layouts y estado - LazyColumn y "state hoisting".
  *
- * [TareaListScreen] es el composable "con estado" (stateful): crea y
- * recuerda el [GestorDeTareas], guarda el texto del formulario y expone ese
- * estado hacia abajo. Toda la parte visual sin estado propio vive en
- * [TareaListContent], que solo recibe datos y callbacks (state hoisting):
- * esto la hace mas facil de reutilizar y de previsualizar.
+ * [TareaListScreen] es el composable "con estado" (stateful): mantiene el
+ * texto del formulario y expone ese estado hacia abajo. Toda la parte visual
+ * sin estado propio vive en [TareaListContent], que solo recibe datos y
+ * callbacks (state hoisting): esto la hace mas facil de reutilizar y de
+ * previsualizar.
  *
  * Sesion 08: se agrega el parametro opcional `onTareaClick`, que permite a
  * quien use esta pantalla navegar a un detalle (ver [com.upb.taskmanager.navigation.AppNavigation]).
+ *
+ * Sesion 12: en vez de crear y recordar un `GestorDeTareas` propio con
+ * `remember`, la pantalla obtiene sus datos de un [TareasViewModel] (por
+ * defecto, uno nuevo con `viewModel()`). Esto permite que el estado de las
+ * tareas sobreviva a cambios de configuracion y se pueda compartir con otras
+ * pantallas del mismo grafo de navegacion.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TareaListScreen(onTareaClick: (Int) -> Unit = {}) {
-    val gestorDeTareas = remember { GestorDeTareas() }
-    var tareas by remember { mutableStateOf(gestorDeTareas.obtenerTareas()) }
+fun TareaListScreen(
+    onTareaClick: (Int) -> Unit = {},
+    tareasViewModel: TareasViewModel = viewModel()
+) {
     var textoNuevaTarea by remember { mutableStateOf("") }
 
     TareaListContent(
-        tareas = tareas,
+        tareas = tareasViewModel.tareas,
         textoNuevaTarea = textoNuevaTarea,
         onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
         onAgregarTarea = {
             if (textoNuevaTarea.isNotBlank()) {
-                gestorDeTareas.agregarTarea(textoNuevaTarea)
-                tareas = gestorDeTareas.obtenerTareas()
+                tareasViewModel.agregarTarea(textoNuevaTarea)
                 textoNuevaTarea = ""
             }
         },
-        onCambiarCompletada = { id ->
-            gestorDeTareas.alternarCompletada(id)
-            tareas = gestorDeTareas.obtenerTareas()
-        },
+        onCambiarCompletada = { id -> tareasViewModel.alternarCompletada(id) },
         onTareaClick = onTareaClick
     )
 }
