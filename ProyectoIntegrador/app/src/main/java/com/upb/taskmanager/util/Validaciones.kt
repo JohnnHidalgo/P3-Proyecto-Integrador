@@ -1,5 +1,7 @@
 package com.upb.taskmanager.util
 
+import com.upb.taskmanager.model.Tarea
+
 /**
  * Sesion 02: fundamentos de Kotlin (variables, tipos y funciones).
  *
@@ -7,6 +9,9 @@ package com.upb.taskmanager.util
  * todavia de clases propias (eso llega en la Sesion 03 con `Tarea` y
  * `GestorDeTareas`), solo usan tipos basicos de Kotlin. Se organizan en el
  * paquete `util` porque son utilidades reutilizables desde cualquier capa.
+ *
+ * Sesion 03: una vez que existe el modelo `Tarea`, se agrega [contarPendientes]
+ * para mostrar el uso de colecciones (`List`) y funciones de orden superior.
  */
 
 /** Longitud minima que debe tener el titulo de una tarea para considerarse valido. */
@@ -47,3 +52,9 @@ fun calcularPromedio(a: Double, b: Double, c: Double): Double = (a + b + c) / 3.
 fun saludarEstudiante(nombre: String, curso: String = "Programacion III"): String {
     return "Hola $nombre, bienvenido/a a $curso"
 }
+
+/**
+ * Cuenta cuantas tareas de la lista todavia no estan completadas.
+ * Usa `count`, una funcion de orden superior sobre colecciones de Kotlin.
+ */
+fun contarPendientes(tareas: List<Tarea>): Int = tareas.count { !it.completada }
