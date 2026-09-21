@@ -1,5 +1,6 @@
 package com.upb.taskmanager.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,10 +38,13 @@ import com.upb.taskmanager.ui.theme.TaskManagerTheme
  * estado hacia abajo. Toda la parte visual sin estado propio vive en
  * [TareaListContent], que solo recibe datos y callbacks (state hoisting):
  * esto la hace mas facil de reutilizar y de previsualizar.
+ *
+ * Sesion 08: se agrega el parametro opcional `onTareaClick`, que permite a
+ * quien use esta pantalla navegar a un detalle (ver [com.upb.taskmanager.navigation.AppNavigation]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TareaListScreen() {
+fun TareaListScreen(onTareaClick: (Int) -> Unit = {}) {
     val gestorDeTareas = remember { GestorDeTareas() }
     var tareas by remember { mutableStateOf(gestorDeTareas.obtenerTareas()) }
     var textoNuevaTarea by remember { mutableStateOf("") }
@@ -59,15 +63,16 @@ fun TareaListScreen() {
         onCambiarCompletada = { id ->
             gestorDeTareas.alternarCompletada(id)
             tareas = gestorDeTareas.obtenerTareas()
-        }
+        },
+        onTareaClick = onTareaClick
     )
 }
 
 /**
  * Composable sin estado propio (stateless): recibe todo lo que necesita
  * mostrar como parametros y notifica las interacciones del usuario mediante
- * callbacks (`onAgregarTarea`, `onCambiarCompletada`), en vez de manejar
- * estado internamente.
+ * callbacks (`onAgregarTarea`, `onCambiarCompletada`, `onTareaClick`), en vez
+ * de manejar estado internamente.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +81,8 @@ fun TareaListContent(
     textoNuevaTarea: String,
     onTextoNuevaTareaCambiado: (String) -> Unit,
     onAgregarTarea: () -> Unit,
-    onCambiarCompletada: (Int) -> Unit
+    onCambiarCompletada: (Int) -> Unit,
+    onTareaClick: (Int) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -112,7 +118,8 @@ fun TareaListContent(
                 items(tareas, key = { it.id }) { tarea ->
                     TareaCardBasica(
                         tarea = tarea,
-                        onCambiarCompletada = { onCambiarCompletada(tarea.id) }
+                        onCambiarCompletada = { onCambiarCompletada(tarea.id) },
+                        onClick = { onTareaClick(tarea.id) }
                     )
                 }
             }
@@ -121,11 +128,16 @@ fun TareaListContent(
 }
 
 @Composable
-private fun TareaCardBasica(tarea: Tarea, onCambiarCompletada: () -> Unit) {
+private fun TareaCardBasica(
+    tarea: Tarea,
+    onCambiarCompletada: () -> Unit,
+    onClick: () -> Unit = {}
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable { onClick() }
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
