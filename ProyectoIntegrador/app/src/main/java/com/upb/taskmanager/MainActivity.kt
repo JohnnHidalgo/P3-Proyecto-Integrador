@@ -3,18 +3,9 @@ package com.upb.taskmanager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.upb.taskmanager.ui.screens.TareaListScreen
 
 /**
  * Sesion 01: configuracion del entorno y primer proyecto con Jetpack Compose.
@@ -22,6 +13,9 @@ import androidx.compose.ui.unit.dp
  * Este proyecto ("Task Manager UPB") es el proyecto integrador de la materia
  * Programacion III y va creciendo sesion a sesion. Cada commit del repositorio
  * corresponde a los contenidos vistos en una sesion del silabo.
+ *
+ * Sesion 04: la pantalla de bienvenida inicial se reemplaza por la primera
+ * version de la lista de tareas ([TareaListScreen]).
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,37 +23,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface {
-                    PantallaBienvenida()
+                    TareaListScreen()
                 }
             }
         }
-    }
-}
-
-@Composable
-fun PantallaBienvenida() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Task Manager UPB",
-            style = MaterialTheme.typography.headlineMedium
-        )
-        Text(
-            text = "Proyecto integrador - Programacion III",
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PantallaBienvenidaPreview() {
-    MaterialTheme {
-        PantallaBienvenida()
     }
 }
