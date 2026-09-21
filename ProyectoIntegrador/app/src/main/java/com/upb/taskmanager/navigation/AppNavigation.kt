@@ -55,7 +55,10 @@ fun AppNavigation() {
             val tareaSeleccionada = uiState.tareas.find { it.id == tareaId }
             TareaDetailScreen(
                 tarea = tareaSeleccionada,
-                onVolver = { navController.popBackStack() }
+                onVolver = { navController.popBackStack() },
+                onCambiarCompletada = {
+                    tareaSeleccionada?.let { tareasViewModel.alternarCompletada(it) }
+                }
             )
         }
     }

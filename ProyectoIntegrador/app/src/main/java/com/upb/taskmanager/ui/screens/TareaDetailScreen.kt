@@ -11,7 +11,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.upb.taskmanager.model.Tarea
+import com.upb.taskmanager.ui.components.TareaCard
 import com.upb.taskmanager.ui.theme.TaskManagerTheme
 
 /**
@@ -25,10 +27,19 @@ import com.upb.taskmanager.ui.theme.TaskManagerTheme
  * [tarea] es nullable porque, en teoria, se podria navegar con un id que ya
  * no existe (por ejemplo si la tarea fue eliminada); en ese caso se muestra
  * un mensaje en vez de fallar.
+ *
+ * Sesion 25: la fila de "titulo + checkbox de completada" se mostraba antes
+ * con un `Text` propio, distinto del que usa la lista. Ahora reutiliza
+ * [TareaCard] (ver `ui/components/TareaCard.kt`), asi que marcar una tarea
+ * como completada se ve y se comporta igual en la lista y en el detalle.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TareaDetailScreen(tarea: Tarea?, onVolver: () -> Unit) {
+fun TareaDetailScreen(
+    tarea: Tarea?,
+    onVolver: () -> Unit,
+    onCambiarCompletada: () -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -53,11 +64,7 @@ fun TareaDetailScreen(tarea: Tarea?, onVolver: () -> Unit) {
                 )
             } else {
                 Text(text = "ID: ${tarea.id}", style = MaterialTheme.typography.bodyMedium)
-                Text(text = tarea.titulo, style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    text = if (tarea.completada) "Estado: completada" else "Estado: pendiente",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                TareaCard(tarea = tarea, onCambiarCompletada = onCambiarCompletada)
             }
         }
     }
