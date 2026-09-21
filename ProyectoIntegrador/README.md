@@ -82,3 +82,25 @@ En resumen, la fuente de verdad de las tareas es siempre Room (a traves de
 `GestorDeTareas.observarTareas()`); Retrofit solo aporta datos de ejemplo la
 primera vez, y DataStore guarda una preferencia de UI independiente de los
 datos de las tareas.
+
+## Generar el APK/AAB (Sesion 27)
+
+El build type `release` de `app/build.gradle.kts` ya tiene `isMinifyEnabled
+= true` (con las reglas de ProGuard/R8 en `proguard-rules.pro`) y un
+`signingConfig` de ejemplo basado en la clave de depuracion, solo para poder
+generar un instalable desde este proyecto sin configurar nada adicional.
+
+Para generar el paquete desde Android Studio:
+
+1. Menu **Build > Generate Signed Bundle / APK...**
+2. Elegir **Android App Bundle** (recomendado para Google Play) o **APK**.
+3. En la pantalla de firma, se puede usar la clave de depuracion de este
+   proyecto (la que ya esta configurada) para probar el flujo, o crear un
+   keystore propio con **Create new...**.
+4. Seleccionar el build variant `release` y terminar el asistente; el
+   archivo generado queda dentro de `app/release/`.
+
+**Importante:** el `signingConfig` de este repositorio es solo un ejemplo
+para el curso. Antes de publicar la app de verdad hay que generar un
+keystore propio, mantenerlo fuera del control de versiones y usarlo en el
+build type `release` en vez del de depuracion.

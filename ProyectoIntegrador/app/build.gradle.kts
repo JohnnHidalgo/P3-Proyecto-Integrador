@@ -22,9 +22,28 @@ android {
         }
     }
 
+    // Sesion 27: firma y generacion del APK/AAB de release.
+    //
+    // NOTA DIDACTICA: para simplificar el ejemplo, el build type "release"
+    // reutiliza el signingConfig "debug" (una clave de depuracion que
+    // Android Studio genera automaticamente en cada maquina, sin contrasena
+    // que proteger). Esto permite generar un APK de release instalable
+    // desde este proyecto sin pedir ni versionar un keystore real.
+    //
+    // Para publicar la app de verdad (por ejemplo en Google Play) hay que
+    // generar un keystore propio (Build > Generate Signed Bundle / APK...
+    // > Create new...) y usarlo aqui en vez del signingConfig "debug",
+    // guardando esa clave y sus contrasenas fuera del control de versiones.
+    signingConfigs {
+        getByName("debug") {
+            // Configuracion de depuracion por defecto de Android Studio.
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
