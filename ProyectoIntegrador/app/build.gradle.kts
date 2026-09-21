@@ -65,6 +65,8 @@ dependencies {
     // Sesion 14: Retrofit, para consumir servicios web REST.
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Sesion 15: corrutinas de Kotlin sobre Android (Dispatchers.Main, etc).
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
