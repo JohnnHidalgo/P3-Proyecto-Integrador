@@ -58,10 +58,33 @@ class GestorDeTareas(private val tareasLocalRepository: TareasLocalRepository) {
         tareasLocalRepository.eliminarTarea(entidadEncontrada)
     }
 
-    /** Alterna el estado `completada` de la tarea con el [id] indicado. */
-    suspend fun alternarCompletada(id: Int) {
-        val entidadEncontrada = buscarEntidadPorId(id) ?: return
-        tareasLocalRepository.alternarCompletada(entidadEncontrada)
+    /**
+     * Alterna el estado `completada` de la [tarea] recibida.
+     *
+     * Sesion 24 (depuracion): esta funcion originalmente recibia solo el
+     * `id` de la tarea (`alternarCompletada(id: Int)`) y, antes de alternar
+     * el estado, volvia a leer la tarea completa desde Room con
+     * `buscarEntidadPorId(id)`. Esa relectura abria una ventana de condicion
+     * de carrera (un problema clasico de "leer antes de escribir"): si el
+     * usuario tocaba el mismo checkbox dos veces muy rapido, la UI lanzaba
+     * dos corrutinas casi al mismo tiempo y las dos podian leer
+     * `completada = false` ANTES de que la primera terminara de escribir
+     * `true`; el resultado neto era que la tarea quedaba marcada como
+     * completada en vez de volver a quedar pendiente en el segundo toque.
+     *
+     * Se detecto poniendo un breakpoint (o un `Log.d`) dentro de
+     * [com.upb.taskmanager.data.local.TareasLocalRepository.alternarCompletada]
+     * e inspeccionando el valor de `tarea.completada` en cada llamada: con
+     * dos toques rapidos, Logcat mostraba `completada = false` en las DOS
+     * llamadas, en vez de `false` y despues `true`.
+     *
+     * La correccion evita la relectura: en vez de volver a consultar Room,
+     * usa directamente la [tarea] que la UI ya tenia (el ultimo valor
+     * observado del `Flow` de Room que [observarTareas] expone), asi que no
+     * queda ninguna consulta adicional que se pueda quedar desactualizada.
+     */
+    suspend fun alternarCompletada(tarea: Tarea) {
+        tareasLocalRepository.alternarCompletada(tarea.aEntidad())
     }
 
     private suspend fun buscarEntidadPorId(id: Int): TareaEntity? =
@@ -69,3 +92,4 @@ class GestorDeTareas(private val tareasLocalRepository: TareasLocalRepository) {
 }
 
 private fun TareaEntity.aTarea(): Tarea = Tarea(id = id, titulo = titulo, completada = completada)
+private fun Tarea.aEntidad(): TareaEntity = TareaEntity(id = id, titulo = titulo, completada = completada)
