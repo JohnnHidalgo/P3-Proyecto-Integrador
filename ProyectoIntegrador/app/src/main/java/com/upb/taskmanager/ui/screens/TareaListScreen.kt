@@ -1,4 +1,4 @@
-﻿package com.upb.taskmanager.ui.screens
+package com.upb.taskmanager.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -30,12 +30,13 @@ import com.upb.taskmanager.model.Tarea
 import com.upb.taskmanager.ui.theme.TaskManagerTheme
 
 /**
- * Sesion 05: componentes basicos de Compose (Scaffold, TextField, Button, Card).
+ * Sesion 07: layouts y estado - LazyColumn y "state hoisting".
  *
- * Esta pantalla ahora es interactiva: permite agregar tareas nuevas y las
- * muestra en una lista. El estado se mantiene con `remember` (todavia sin
- * ViewModel, eso llega en la Sesion 12); el [GestorDeTareas] vive mientras
- * la pantalla este en composicion.
+ * [TareaListScreen] es el composable "con estado" (stateful): crea y
+ * recuerda el [GestorDeTareas], guarda el texto del formulario y expone ese
+ * estado hacia abajo. Toda la parte visual sin estado propio vive en
+ * [TareaListContent], que solo recibe datos y callbacks (state hoisting):
+ * esto la hace mas facil de reutilizar y de previsualizar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +45,39 @@ fun TareaListScreen() {
     var tareas by remember { mutableStateOf(gestorDeTareas.obtenerTareas()) }
     var textoNuevaTarea by remember { mutableStateOf("") }
 
+    TareaListContent(
+        tareas = tareas,
+        textoNuevaTarea = textoNuevaTarea,
+        onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
+        onAgregarTarea = {
+            if (textoNuevaTarea.isNotBlank()) {
+                gestorDeTareas.agregarTarea(textoNuevaTarea)
+                tareas = gestorDeTareas.obtenerTareas()
+                textoNuevaTarea = ""
+            }
+        },
+        onCambiarCompletada = { id ->
+            gestorDeTareas.alternarCompletada(id)
+            tareas = gestorDeTareas.obtenerTareas()
+        }
+    )
+}
+
+/**
+ * Composable sin estado propio (stateless): recibe todo lo que necesita
+ * mostrar como parametros y notifica las interacciones del usuario mediante
+ * callbacks (`onAgregarTarea`, `onCambiarCompletada`), en vez de manejar
+ * estado internamente.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TareaListContent(
+    tareas: List<Tarea>,
+    textoNuevaTarea: String,
+    onTextoNuevaTareaCambiado: (String) -> Unit,
+    onAgregarTarea: () -> Unit,
+    onCambiarCompletada: (Int) -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Task Manager UPB") })
@@ -63,32 +97,22 @@ fun TareaListScreen() {
             ) {
                 TextField(
                     value = textoNuevaTarea,
-                    onValueChange = { textoNuevaTarea = it },
+                    onValueChange = onTextoNuevaTareaCambiado,
                     modifier = Modifier.weight(1f),
                     label = { Text("Nueva tarea") }
                 )
-                Button(onClick = {
-                    if (textoNuevaTarea.isNotBlank()) {
-                        gestorDeTareas.agregarTarea(textoNuevaTarea)
-                        tareas = gestorDeTareas.obtenerTareas()
-                        textoNuevaTarea = ""
-                    }
-                }) {
+                Button(onClick = onAgregarTarea) {
                     Text("Agregar")
                 }
             }
 
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+            LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                for (tarea in tareas) {
+                items(tareas, key = { it.id }) { tarea ->
                     TareaCardBasica(
                         tarea = tarea,
-                        onCambiarCompletada = {
-                            gestorDeTareas.alternarCompletada(tarea.id)
-                            tareas = gestorDeTareas.obtenerTareas()
-                        }
+                        onCambiarCompletada = { onCambiarCompletada(tarea.id) }
                     )
                 }
             }
@@ -114,8 +138,17 @@ private fun TareaCardBasica(tarea: Tarea, onCambiarCompletada: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
-fun TareaListScreenPreview() {
+fun TareaListContentPreview() {
     TaskManagerTheme {
-        TareaListScreen()
+        TareaListContent(
+            tareas = listOf(
+                Tarea(id = 1, titulo = "Repasar LazyColumn", completada = true),
+                Tarea(id = 2, titulo = "Aplicar state hoisting", completada = false)
+            ),
+            textoNuevaTarea = "",
+            onTextoNuevaTareaCambiado = {},
+            onAgregarTarea = {},
+            onCambiarCompletada = {}
+        )
     }
 }
