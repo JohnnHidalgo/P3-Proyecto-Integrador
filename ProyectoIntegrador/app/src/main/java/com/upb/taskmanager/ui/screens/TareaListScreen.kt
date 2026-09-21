@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -61,6 +62,11 @@ import com.upb.taskmanager.viewmodel.TareasViewModel
  * remoto al crearse (ver `TareasViewModel.cargarTareasRemotas`). Mientras esa
  * llamada de red esta en curso, `uiState.cargando` es `true` y esta pantalla
  * muestra un indicador de progreso.
+ *
+ * Sesion 16: `agregarTarea` ahora devuelve si la operacion tuvo exito; el
+ * campo de texto solo se limpia cuando la tarea se agrego correctamente. Si
+ * hay un `uiState.mensajeError` (por una validacion o una falla de red), esta
+ * pantalla lo muestra en rojo debajo del formulario.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,11 +80,12 @@ fun TareaListScreen(
     TareaListContent(
         tareas = uiState.tareas,
         cargando = uiState.cargando,
+        mensajeError = uiState.mensajeError,
         textoNuevaTarea = textoNuevaTarea,
         onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
         onAgregarTarea = {
-            if (textoNuevaTarea.isNotBlank()) {
-                tareasViewModel.agregarTarea(textoNuevaTarea)
+            val seAgrego = tareasViewModel.agregarTarea(textoNuevaTarea)
+            if (seAgrego) {
                 textoNuevaTarea = ""
             }
         },
@@ -102,7 +109,8 @@ fun TareaListContent(
     onAgregarTarea: () -> Unit,
     onCambiarCompletada: (Int) -> Unit,
     onTareaClick: (Int) -> Unit = {},
-    cargando: Boolean = false
+    cargando: Boolean = false,
+    mensajeError: String? = null
 ) {
     Scaffold(
         topBar = {
@@ -130,6 +138,14 @@ fun TareaListContent(
                 Button(onClick = onAgregarTarea) {
                     Text("Agregar")
                 }
+            }
+
+            if (mensajeError != null) {
+                Text(
+                    text = mensajeError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             if (cargando) {
