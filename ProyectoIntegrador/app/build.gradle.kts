@@ -58,6 +58,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    // Sesion 08: Navigation Compose, para el grafo de navegacion entre pantallas.
+    implementation("androidx.navigation:navigation-compose:2.6.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
