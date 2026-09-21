@@ -1,6 +1,8 @@
 package com.upb.taskmanager.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -49,7 +51,8 @@ fun AppNavigation() {
             arguments = listOf(navArgument("tareaId") { type = NavType.IntType })
         ) { backStackEntry ->
             val tareaId = backStackEntry.arguments?.getInt("tareaId") ?: -1
-            val tareaSeleccionada = tareasViewModel.tareas.find { it.id == tareaId }
+            val uiState by tareasViewModel.uiState.collectAsState()
+            val tareaSeleccionada = uiState.tareas.find { it.id == tareaId }
             TareaDetailScreen(
                 tarea = tareaSeleccionada,
                 onVolver = { navController.popBackStack() }
