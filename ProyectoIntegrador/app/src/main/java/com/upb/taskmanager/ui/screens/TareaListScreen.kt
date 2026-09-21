@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,11 @@ import com.upb.taskmanager.viewmodel.TareasViewModel
  * defecto, uno nuevo con `viewModel()`). Esto permite que el estado de las
  * tareas sobreviva a cambios de configuracion y se pueda compartir con otras
  * pantallas del mismo grafo de navegacion.
+ *
+ * Sesion 13: el ViewModel ahora expone un `StateFlow<TareasUiState>` en vez
+ * de una lista suelta. La pantalla se suscribe con `collectAsState()`, que
+ * convierte ese flujo en un `State` de Compose y recompone automaticamente
+ * cada vez que llega un nuevo valor.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,9 +62,10 @@ fun TareaListScreen(
     tareasViewModel: TareasViewModel = viewModel()
 ) {
     var textoNuevaTarea by remember { mutableStateOf("") }
+    val uiState by tareasViewModel.uiState.collectAsState()
 
     TareaListContent(
-        tareas = tareasViewModel.tareas,
+        tareas = uiState.tareas,
         textoNuevaTarea = textoNuevaTarea,
         onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
         onAgregarTarea = {
