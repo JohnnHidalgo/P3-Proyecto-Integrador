@@ -128,7 +128,7 @@ fun TareaListScreen(
                 textoNuevaTarea = ""
             }
         },
-        onCambiarCompletada = { id -> tareasViewModel.alternarCompletada(id) },
+        onCambiarCompletada = { tarea -> tareasViewModel.alternarCompletada(tarea) },
         onTareaClick = onTareaClick,
         filtroSeleccionado = filtroSeleccionado,
         onFiltroCambiado = { filtroSeleccionado = it },
@@ -161,7 +161,7 @@ fun TareaListContent(
     textoNuevaTarea: String,
     onTextoNuevaTareaCambiado: (String) -> Unit,
     onAgregarTarea: () -> Unit,
-    onCambiarCompletada: (Int) -> Unit,
+    onCambiarCompletada: (Tarea) -> Unit,
     onTareaClick: (Int) -> Unit = {},
     cargando: Boolean = false,
     mensajeError: String? = null,
@@ -251,7 +251,7 @@ fun TareaListContent(
                 items(tareas, key = { it.id }) { tarea ->
                     TareaCardBasica(
                         tarea = tarea,
-                        onCambiarCompletada = { onCambiarCompletada(tarea.id) },
+                        onCambiarCompletada = { onCambiarCompletada(tarea) },
                         onClick = { onTareaClick(tarea.id) }
                     )
                 }

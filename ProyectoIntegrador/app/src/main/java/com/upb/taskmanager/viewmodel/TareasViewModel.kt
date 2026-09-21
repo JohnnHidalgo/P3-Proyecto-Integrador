@@ -7,6 +7,7 @@ import com.upb.taskmanager.data.local.TareaDatabase
 import com.upb.taskmanager.data.local.TareasLocalRepository
 import com.upb.taskmanager.data.remote.TareasRemoteRepository
 import com.upb.taskmanager.model.GestorDeTareas
+import com.upb.taskmanager.model.Tarea
 import com.upb.taskmanager.util.LONGITUD_MINIMA_TITULO
 import com.upb.taskmanager.util.Resultado
 import com.upb.taskmanager.util.tituloValido
@@ -91,10 +92,19 @@ class TareasViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
-    /** Alterna el estado completada/pendiente de una tarea. */
-    fun alternarCompletada(id: Int) {
+    /**
+     * Alterna el estado completada/pendiente de una tarea.
+     *
+     * Sesion 24 (depuracion): recibe la [tarea] completa (tal como la
+     * muestra la UI en ese momento) en vez de solo su id, para evitar la
+     * condicion de carrera de "leer antes de escribir" que tenia
+     * `GestorDeTareas.alternarCompletada` cuando volvia a consultar Room por
+     * su cuenta antes de alternar el estado. Ver el comentario en
+     * [GestorDeTareas.alternarCompletada] para el detalle del bug.
+     */
+    fun alternarCompletada(tarea: Tarea) {
         viewModelScope.launch {
-            gestorDeTareas.alternarCompletada(id)
+            gestorDeTareas.alternarCompletada(tarea)
         }
     }
 
