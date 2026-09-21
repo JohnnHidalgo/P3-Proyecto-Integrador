@@ -1,11 +1,14 @@
 package com.upb.taskmanager.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.upb.taskmanager.data.remote.TareasRemoteRepository
 import com.upb.taskmanager.model.GestorDeTareas
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * Sesion 12: introduccion a MVVM.
@@ -15,13 +18,17 @@ import kotlinx.coroutines.flow.update
  * `TareasViewModel` durante todo el curso, aunque su implementacion interna
  * cambie mas adelante (Sesion 23: pasara a observar Room mediante `Flow`).
  *
- * Sesion 13: en vez de exponer una `mutableStateListOf` suelta, el estado se
- * modela como un unico [TareasUiState] envuelto en un [StateFlow]. Esto deja
- * la puerta abierta a agregar mas campos de estado (por ejemplo `cargando`,
- * usado a partir de la Sesion 15 con las llamadas de red) sin tener que
- * multiplicar variables de estado sueltas.
+ * Sesion 13: el estado se modela como un unico [TareasUiState] envuelto en un
+ * [StateFlow], en vez de una `mutableStateListOf` suelta.
+ *
+ * Sesion 15: al crearse, el ViewModel sincroniza una vez con el repositorio
+ * remoto ([TareasRemoteRepository]) usando `viewModelScope.launch`, y expone
+ * `cargando = true` mientras esa llamada de red esta en curso, para que la UI
+ * pueda mostrar un indicador de progreso.
  */
-class TareasViewModel : ViewModel() {
+class TareasViewModel(
+    private val tareasRemoteRepository: TareasRemoteRepository = TareasRemoteRepository()
+) : ViewModel() {
 
     private val gestorDeTareas = GestorDeTareas()
 
@@ -29,6 +36,10 @@ class TareasViewModel : ViewModel() {
 
     /** Estado de UI de solo lectura, observable desde Compose con `collectAsState()`. */
     val uiState: StateFlow<TareasUiState> = _uiState.asStateFlow()
+
+    init {
+        cargarTareasRemotas()
+    }
 
     /** Agrega una tarea nueva y refresca el estado de UI. */
     fun agregarTarea(titulo: String) {
@@ -40,6 +51,26 @@ class TareasViewModel : ViewModel() {
     fun alternarCompletada(id: Int) {
         gestorDeTareas.alternarCompletada(id)
         sincronizarTareas()
+    }
+
+    /**
+     * Trae tareas de ejemplo desde el repositorio remoto y las agrega al
+     * gestor local. Se ejecuta en `viewModelScope`, un `CoroutineScope` que
+     * el propio ViewModel cancela automaticamente cuando se destruye, para no
+     * dejar corrutinas huerfanas.
+     */
+    private fun cargarTareasRemotas() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(cargando = true) }
+            val tareasRemotas = tareasRemoteRepository.obtenerTareasRemotas()
+            for (tareaRemota in tareasRemotas) {
+                val tareaCreada = gestorDeTareas.agregarTarea(tareaRemota.title)
+                if (tareaRemota.completed) {
+                    gestorDeTareas.alternarCompletada(tareaCreada.id)
+                }
+            }
+            _uiState.update { it.copy(tareas = gestorDeTareas.obtenerTareas(), cargando = false) }
+        }
     }
 
     private fun sincronizarTareas() {

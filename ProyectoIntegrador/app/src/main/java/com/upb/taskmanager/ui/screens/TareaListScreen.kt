@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,6 +56,11 @@ import com.upb.taskmanager.viewmodel.TareasViewModel
  * de una lista suelta. La pantalla se suscribe con `collectAsState()`, que
  * convierte ese flujo en un `State` de Compose y recompone automaticamente
  * cada vez que llega un nuevo valor.
+ *
+ * Sesion 15: el ViewModel sincroniza tareas de ejemplo desde un repositorio
+ * remoto al crearse (ver `TareasViewModel.cargarTareasRemotas`). Mientras esa
+ * llamada de red esta en curso, `uiState.cargando` es `true` y esta pantalla
+ * muestra un indicador de progreso.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +73,7 @@ fun TareaListScreen(
 
     TareaListContent(
         tareas = uiState.tareas,
+        cargando = uiState.cargando,
         textoNuevaTarea = textoNuevaTarea,
         onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
         onAgregarTarea = {
@@ -93,7 +101,8 @@ fun TareaListContent(
     onTextoNuevaTareaCambiado: (String) -> Unit,
     onAgregarTarea: () -> Unit,
     onCambiarCompletada: (Int) -> Unit,
-    onTareaClick: (Int) -> Unit = {}
+    onTareaClick: (Int) -> Unit = {},
+    cargando: Boolean = false
 ) {
     Scaffold(
         topBar = {
@@ -120,6 +129,15 @@ fun TareaListContent(
                 )
                 Button(onClick = onAgregarTarea) {
                     Text("Agregar")
+                }
+            }
+
+            if (cargando) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
 
