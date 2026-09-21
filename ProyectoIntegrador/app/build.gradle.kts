@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    // Sesion 20: kapt, necesario para el procesador de anotaciones de Room.
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -67,6 +69,10 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     // Sesion 15: corrutinas de Kotlin sobre Android (Dispatchers.Main, etc).
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    // Sesion 20: Room, para persistencia local en una base de datos SQLite.
+    implementation("androidx.room:room-runtime:2.5.2")
+    implementation("androidx.room:room-ktx:2.5.2")
+    kapt("androidx.room:room-compiler:2.5.2")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
