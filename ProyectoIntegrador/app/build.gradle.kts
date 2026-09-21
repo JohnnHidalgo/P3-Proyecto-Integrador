@@ -73,6 +73,8 @@ dependencies {
     implementation("androidx.room:room-runtime:2.5.2")
     implementation("androidx.room:room-ktx:2.5.2")
     kapt("androidx.room:room-compiler:2.5.2")
+    // Sesion 22: DataStore, para guardar preferencias simples del usuario.
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

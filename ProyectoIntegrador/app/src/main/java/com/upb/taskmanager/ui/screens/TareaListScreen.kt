@@ -21,20 +21,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.upb.taskmanager.data.datastore.PreferenciasUsuario
 import com.upb.taskmanager.model.Tarea
 import com.upb.taskmanager.ui.theme.TaskManagerTheme
 import com.upb.taskmanager.viewmodel.TareasViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Sesion 07: layouts y estado - LazyColumn y "state hoisting".
@@ -73,6 +78,12 @@ import com.upb.taskmanager.viewmodel.TareasViewModel
  * lista filtrada se calcula con `derivedStateOf`, que solo vuelve a
  * ejecutar el filtro cuando `uiState.tareas` o `filtroSeleccionado` cambian
  * de verdad, en vez de recalcularse en cada recomposicion.
+ *
+ * Sesion 22: se agrega la preferencia persistida "mostrar solo pendientes"
+ * ([PreferenciasUsuario], guardada con DataStore). A diferencia de
+ * `filtroSeleccionado` (que se pierde si se cierra la app), esta preferencia
+ * sobrevive entre sesiones: al volver a abrir la app, el filtro de
+ * pendientes se re-aplica automaticamente si el usuario lo dejo activado.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +94,17 @@ fun TareaListScreen(
     var textoNuevaTarea by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf(FiltroTareas.TODAS) }
     val uiState by tareasViewModel.uiState.collectAsState()
+
+    val contexto = LocalContext.current
+    val preferenciasUsuario = remember { PreferenciasUsuario(contexto) }
+    val alcanceCorutinas = rememberCoroutineScope()
+    val mostrarSoloPendientesGuardado by preferenciasUsuario.mostrarSoloPendientes.collectAsState(initial = false)
+
+    // Aplica la preferencia guardada la primera vez que se conoce su valor
+    // (al abrir la pantalla) y cada vez que cambia (al usar el checkbox).
+    LaunchedEffect(mostrarSoloPendientesGuardado) {
+        filtroSeleccionado = if (mostrarSoloPendientesGuardado) FiltroTareas.PENDIENTES else FiltroTareas.TODAS
+    }
 
     val tareasFiltradas by remember {
         derivedStateOf {
@@ -109,7 +131,13 @@ fun TareaListScreen(
         onCambiarCompletada = { id -> tareasViewModel.alternarCompletada(id) },
         onTareaClick = onTareaClick,
         filtroSeleccionado = filtroSeleccionado,
-        onFiltroCambiado = { filtroSeleccionado = it }
+        onFiltroCambiado = { filtroSeleccionado = it },
+        mostrarSoloPendientesGuardado = mostrarSoloPendientesGuardado,
+        onCambiarMostrarSoloPendientes = { nuevoValor ->
+            alcanceCorutinas.launch {
+                preferenciasUsuario.cambiarMostrarSoloPendientes(nuevoValor)
+            }
+        }
     )
 }
 
@@ -138,7 +166,9 @@ fun TareaListContent(
     cargando: Boolean = false,
     mensajeError: String? = null,
     filtroSeleccionado: FiltroTareas = FiltroTareas.TODAS,
-    onFiltroCambiado: (FiltroTareas) -> Unit = {}
+    onFiltroCambiado: (FiltroTareas) -> Unit = {},
+    mostrarSoloPendientesGuardado: Boolean = false,
+    onCambiarMostrarSoloPendientes: (Boolean) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -182,6 +212,20 @@ fun TareaListContent(
                         )
                     }
                 }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = mostrarSoloPendientesGuardado,
+                    onCheckedChange = onCambiarMostrarSoloPendientes
+                )
+                Text(
+                    text = "Recordar filtro de pendientes (DataStore)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             if (mensajeError != null) {
