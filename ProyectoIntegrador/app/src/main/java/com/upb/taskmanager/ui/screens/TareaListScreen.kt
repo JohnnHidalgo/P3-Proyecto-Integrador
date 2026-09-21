@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,10 +17,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +68,11 @@ import com.upb.taskmanager.viewmodel.TareasViewModel
  * campo de texto solo se limpia cuando la tarea se agrego correctamente. Si
  * hay un `uiState.mensajeError` (por una validacion o una falla de red), esta
  * pantalla lo muestra en rojo debajo del formulario.
+ *
+ * Sesion 17: se agrega un filtro (todas / pendientes / completadas). La
+ * lista filtrada se calcula con `derivedStateOf`, que solo vuelve a
+ * ejecutar el filtro cuando `uiState.tareas` o `filtroSeleccionado` cambian
+ * de verdad, en vez de recalcularse en cada recomposicion.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,10 +81,21 @@ fun TareaListScreen(
     tareasViewModel: TareasViewModel = viewModel()
 ) {
     var textoNuevaTarea by remember { mutableStateOf("") }
+    var filtroSeleccionado by remember { mutableStateOf(FiltroTareas.TODAS) }
     val uiState by tareasViewModel.uiState.collectAsState()
 
+    val tareasFiltradas by remember {
+        derivedStateOf {
+            when (filtroSeleccionado) {
+                FiltroTareas.TODAS -> uiState.tareas
+                FiltroTareas.PENDIENTES -> uiState.tareas.filter { !it.completada }
+                FiltroTareas.COMPLETADAS -> uiState.tareas.filter { it.completada }
+            }
+        }
+    }
+
     TareaListContent(
-        tareas = uiState.tareas,
+        tareas = tareasFiltradas,
         cargando = uiState.cargando,
         mensajeError = uiState.mensajeError,
         textoNuevaTarea = textoNuevaTarea,
@@ -90,8 +107,17 @@ fun TareaListScreen(
             }
         },
         onCambiarCompletada = { id -> tareasViewModel.alternarCompletada(id) },
-        onTareaClick = onTareaClick
+        onTareaClick = onTareaClick,
+        filtroSeleccionado = filtroSeleccionado,
+        onFiltroCambiado = { filtroSeleccionado = it }
     )
+}
+
+/** Filtros disponibles para la lista de tareas (Sesion 17). */
+enum class FiltroTareas(val etiqueta: String) {
+    TODAS("Todas"),
+    PENDIENTES("Pendientes"),
+    COMPLETADAS("Completadas")
 }
 
 /**
@@ -110,18 +136,18 @@ fun TareaListContent(
     onCambiarCompletada: (Int) -> Unit,
     onTareaClick: (Int) -> Unit = {},
     cargando: Boolean = false,
-    mensajeError: String? = null
+    mensajeError: String? = null,
+    filtroSeleccionado: FiltroTareas = FiltroTareas.TODAS,
+    onFiltroCambiado: (FiltroTareas) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Task Manager UPB") })
         }
     ) { paddingDelScaffold ->
+        // Sesion 17: modifier compartido con TareaDetailScreen (ver PantallaComun.kt).
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingDelScaffold)
-                .padding(16.dp),
+            modifier = Modifier.contenidoDePantalla(paddingDelScaffold),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -137,6 +163,24 @@ fun TareaListContent(
                 )
                 Button(onClick = onAgregarTarea) {
                     Text("Agregar")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (filtro in FiltroTareas.values()) {
+                    TextButton(onClick = { onFiltroCambiado(filtro) }) {
+                        Text(
+                            text = filtro.etiqueta,
+                            style = if (filtro == filtroSeleccionado) {
+                                MaterialTheme.typography.labelLarge
+                            } else {
+                                MaterialTheme.typography.bodyMedium
+                            }
+                        )
+                    }
                 }
             }
 
