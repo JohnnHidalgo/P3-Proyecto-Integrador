@@ -1,24 +1,19 @@
 package com.upb.taskmanager.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.upb.taskmanager.data.datastore.PreferenciasUsuario
 import com.upb.taskmanager.model.Tarea
+import com.upb.taskmanager.ui.components.TareaCard
+import com.upb.taskmanager.ui.components.TareaFormulario
 import com.upb.taskmanager.ui.theme.TaskManagerTheme
 import com.upb.taskmanager.viewmodel.TareasViewModel
 import kotlinx.coroutines.launch
@@ -84,6 +81,10 @@ import kotlinx.coroutines.launch
  * `filtroSeleccionado` (que se pierde si se cierra la app), esta preferencia
  * sobrevive entre sesiones: al volver a abrir la app, el filtro de
  * pendientes se re-aplica automaticamente si el usuario lo dejo activado.
+ *
+ * Sesion 25: el formulario de agregar tarea y la tarjeta de cada tarea se
+ * extrajeron a `ui/components` ([TareaFormulario], [TareaCard]) para poder
+ * reutilizarlos tambien en [com.upb.taskmanager.ui.screens.TareaDetailScreen].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,21 +181,12 @@ fun TareaListContent(
             modifier = Modifier.contenidoDePantalla(paddingDelScaffold),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextField(
-                    value = textoNuevaTarea,
-                    onValueChange = onTextoNuevaTareaCambiado,
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Nueva tarea") }
-                )
-                Button(onClick = onAgregarTarea) {
-                    Text("Agregar")
-                }
-            }
+            // Sesion 25: formulario extraido a ui/components/TareaFormulario.kt.
+            TareaFormulario(
+                valor = textoNuevaTarea,
+                onValorCambiado = onTextoNuevaTareaCambiado,
+                onAgregar = onAgregarTarea
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -249,33 +241,14 @@ fun TareaListContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(tareas, key = { it.id }) { tarea ->
-                    TareaCardBasica(
+                    // Sesion 25: tarjeta extraida a ui/components/TareaCard.kt.
+                    TareaCard(
                         tarea = tarea,
                         onCambiarCompletada = { onCambiarCompletada(tarea) },
                         onClick = { onTareaClick(tarea.id) }
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TareaCardBasica(
-    tarea: Tarea,
-    onCambiarCompletada: () -> Unit,
-    onClick: () -> Unit = {}
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onClick() }
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(checked = tarea.completada, onCheckedChange = { onCambiarCompletada() })
-            Text(text = tarea.titulo)
         }
     }
 }
