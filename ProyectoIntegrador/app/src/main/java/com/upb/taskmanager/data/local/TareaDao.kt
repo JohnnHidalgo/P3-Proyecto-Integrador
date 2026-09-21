@@ -24,9 +24,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TareaDao {
 
+    /** Lectura unica (no reactiva) de todas las tareas, ordenadas por id. */
     @Query("SELECT * FROM tareas ORDER BY id ASC")
     suspend fun obtenerTodas(): List<TareaEntity>
 
+    /** Lectura reactiva: emite una lista nueva cada vez que la tabla cambia. */
     @Query("SELECT * FROM tareas ORDER BY id ASC")
     fun observarTodas(): Flow<List<TareaEntity>>
 
