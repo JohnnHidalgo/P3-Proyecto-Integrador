@@ -62,6 +62,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.6.0")
     // Sesion 12: integracion de ViewModel con Compose (funcion viewModel()).
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    // Sesion 14: Retrofit, para consumir servicios web REST.
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
