@@ -21,7 +21,7 @@ exactamente que codigo se agrego en cada clase.
 - Android Gradle Plugin 8.7.0
 - Kotlin 1.9.24
 - Gradle 8.9 (compatible con JDK 17 a 21)
-- compileSdk / targetSdk 33, minSdk 24
+- compileSdk / targetSdk 34, minSdk 24
 - Jetpack Compose BOM 2023.05.01 (Compose Compiler 1.5.14)
 
 ## Como recorrer la evolucion del proyecto
