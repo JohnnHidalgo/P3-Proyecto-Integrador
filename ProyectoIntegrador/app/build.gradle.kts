@@ -89,9 +89,12 @@ dependencies {
     // Sesion 15: corrutinas de Kotlin sobre Android (Dispatchers.Main, etc).
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
     // Sesion 20: Room, para persistencia local en una base de datos SQLite.
-    implementation("androidx.room:room-runtime:2.5.2")
-    implementation("androidx.room:room-ktx:2.5.2")
-    kapt("androidx.room:room-compiler:2.5.2")
+    // Nota: se usa 2.6.1 (no 2.5.2) porque su lector de metadata de Kotlin
+    // es el primero compatible con Kotlin 1.9.x; con 2.5.2, kapt no reconoce
+    // los "suspend fun" del DAO y falla con errores de tipo de retorno.
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
     // Sesion 22: DataStore, para guardar preferencias simples del usuario.
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
