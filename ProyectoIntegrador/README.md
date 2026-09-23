@@ -6,23 +6,46 @@ sesion a sesion junto con el silabo: cada commit relevante esta etiquetado con
 el numero de sesion en su mensaje, para poder revisar `git log` y ver
 exactamente que codigo se agrego en cada clase.
 
+## Requisitos previos
+
+- **JDK 17 o superior** (probado con JDK 21). Android Studio trae uno propio
+  integrado; si compilan desde la terminal, revisen que `java -version`
+  muestre 17+.
+- **Android Studio Koala (2024.1) o superior** (para que el asistente de SDK
+  ofrezca instalar la Platform 34 automaticamente).
+- **Android SDK Platform 34** instalada (SDK Manager > SDK Platforms >
+  Android 14.0 "UpsideDownCake"). Sin esto falla el sync con errores de
+  "AAR metadata".
+- Conexion a internet la primera vez que se sincroniza (Gradle descarga las
+  dependencias de Compose, Room, Retrofit, etc.).
+
 ## Como abrirlo
 
-1. Abrir Android Studio (Hedgehog o superior) y seleccionar "Open" sobre esta
-   carpeta (`ProyectoIntegrador`).
+1. Abrir Android Studio y seleccionar "Open" sobre esta carpeta
+   (`ProyectoIntegrador`).
 2. Si Android Studio pide generar el Gradle Wrapper, aceptar (este repositorio
    no incluye el binario `gradle-wrapper.jar`; Android Studio lo genera al
    sincronizar el proyecto).
-3. Esperar la sincronizacion de Gradle y ejecutar la app en un emulador o
-   dispositivo con API 24 o superior.
+3. Esperar la sincronizacion de Gradle y ejecutar la app (Run) en un emulador
+   o dispositivo con API 24 o superior.
 
 ## Version del entorno usada
 
-- Android Gradle Plugin 8.7.0
-- Kotlin 1.9.24
-- Gradle 8.9 (compatible con JDK 17 a 21)
-- compileSdk / targetSdk 34, minSdk 24
-- Jetpack Compose BOM 2023.05.01 (Compose Compiler 1.5.14)
+| Componente | Version |
+|---|---|
+| Gradle (wrapper) | 8.9 |
+| Android Gradle Plugin (AGP) | 8.7.0 |
+| Kotlin | 1.9.24 |
+| Compose Compiler | 1.5.14 |
+| Jetpack Compose BOM | 2023.05.01 |
+| compileSdk / targetSdk | 34 |
+| minSdk | 24 |
+| Navigation Compose | 2.6.0 |
+| Lifecycle (runtime / viewmodel-compose) | 2.6.1 |
+| Retrofit (+ converter-gson) | 2.9.0 |
+| Coroutines Android | 1.7.1 |
+| Room | 2.6.1 |
+| DataStore Preferences | 1.0.0 |
 
 ## Como recorrer la evolucion del proyecto
 
