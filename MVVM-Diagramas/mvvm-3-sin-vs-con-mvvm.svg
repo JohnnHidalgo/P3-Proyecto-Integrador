@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" width="1240" height="720" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="720" fill="#FFFFFF"/>
+
+  <text x="620" y="48" text-anchor="middle" font-size="28" font-weight="700" fill="#1B3A8A">¿Por qué MVVM? Antes y después de reestructurar</text>
+  <text x="620" y="76" text-anchor="middle" font-size="16" fill="#64748B">Lo que cambia al pasar de un solo Composable a capas con responsabilidades separadas</text>
+
+  <!-- ================= SIN MVVM ================= -->
+  <rect x="30" y="100" width="570" height="590" rx="14" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2"/>
+  <text x="60" y="138" font-size="24" font-weight="700" fill="#B42318">SIN MVVM</text>
+  <text x="60" y="162" font-size="15" fill="#64748B">Todo mezclado dentro del Composable</text>
+
+  <rect x="70" y="185" width="490" height="250" rx="12" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2"/>
+  <text x="90" y="213" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#1E293B">TareaListScreen  (un solo archivo)</text>
+
+  <rect x="90" y="228" width="450" height="40" rx="8" fill="#E8EEFB" stroke="#8FA9E6"/>
+  <text x="108" y="253" font-size="15" fill="#1E293B">Dibuja la interfaz (Compose)</text>
+  <rect x="90" y="276" width="450" height="40" rx="8" fill="#FEF3C7" stroke="#F5C84B"/>
+  <text x="108" y="301" font-size="15" fill="#1E293B">Guarda el estado con remember { }</text>
+  <rect x="90" y="324" width="450" height="40" rx="8" fill="#FEF3C7" stroke="#F5C84B"/>
+  <text x="108" y="349" font-size="15" fill="#1E293B">Valida y aplica reglas de negocio</text>
+  <rect x="90" y="372" width="450" height="40" rx="8" fill="#E6F5EC" stroke="#8FD0AB"/>
+  <text x="108" y="397" font-size="15" fill="#1E293B">Llama a Room y a Retrofit directamente</text>
+
+  <!-- Problemas -->
+  <g stroke="#B42318" stroke-width="3" stroke-linecap="round">
+    <line x1="74" y1="482" x2="88" y2="496"/><line x1="88" y1="482" x2="74" y2="496"/>
+    <line x1="74" y1="532" x2="88" y2="546"/><line x1="88" y1="532" x2="74" y2="546"/>
+    <line x1="74" y1="582" x2="88" y2="596"/><line x1="88" y1="582" x2="74" y2="596"/>
+    <line x1="74" y1="632" x2="88" y2="646"/><line x1="88" y1="632" x2="74" y2="646"/>
+  </g>
+  <text x="104" y="496" font-size="17" fill="#7F1D1D">El estado se pierde al rotar la pantalla</text>
+  <text x="104" y="546" font-size="17" fill="#7F1D1D">Imposible probar la lógica sin un emulador</text>
+  <text x="104" y="596" font-size="17" fill="#7F1D1D">Un archivo enorme: cada cambio rompe algo</text>
+  <text x="104" y="646" font-size="17" fill="#7F1D1D">La lógica no se puede reutilizar</text>
+
+  <!-- Flecha central -->
+  <polygon points="605,385 618,385 618,372 635,392 618,412 618,399 605,399" fill="#1B3A8A"/>
+
+  <!-- ================= CON MVVM ================= -->
+  <rect x="640" y="100" width="570" height="590" rx="14" fill="#F0FDF4" stroke="#86EFAC" stroke-width="2"/>
+  <text x="670" y="138" font-size="24" font-weight="700" fill="#166534">CON MVVM</text>
+  <text x="670" y="162" font-size="15" fill="#64748B">Cada capa con una sola responsabilidad</text>
+
+  <rect x="680" y="185" width="490" height="66" rx="10" fill="#E8EEFB" stroke="#1E4DB7" stroke-width="2"/>
+  <text x="700" y="213" font-size="18" font-weight="700" fill="#1E4DB7">Vista (Compose)</text>
+  <text x="700" y="237" font-size="14" fill="#1E293B">Dibuja el estado y envía los eventos del usuario</text>
+
+  <line x1="925" y1="253" x2="925" y2="283" stroke="#475569" stroke-width="2.5" marker-end="url(#arrDark)"/>
+
+  <rect x="680" y="285" width="490" height="66" rx="10" fill="#FEF3C7" stroke="#A16207" stroke-width="2"/>
+  <text x="700" y="313" font-size="18" font-weight="700" fill="#A16207">ViewModel</text>
+  <text x="700" y="337" font-size="14" fill="#1E293B">Guarda el estado y aplica la lógica de la pantalla</text>
+
+  <line x1="925" y1="353" x2="925" y2="383" stroke="#475569" stroke-width="2.5" marker-end="url(#arrDark)"/>
+
+  <rect x="680" y="385" width="490" height="66" rx="10" fill="#E6F5EC" stroke="#1F7A4D" stroke-width="2"/>
+  <text x="700" y="413" font-size="18" font-weight="700" fill="#1F7A4D">Modelo</text>
+  <text x="700" y="437" font-size="14" fill="#1E293B">GestorDeTareas, Room y Retrofit</text>
+
+  <!-- Beneficios -->
+  <g stroke="#166534" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <polyline points="674,490 681,498 694,481"/>
+    <polyline points="674,540 681,548 694,531"/>
+    <polyline points="674,590 681,598 694,581"/>
+    <polyline points="674,640 681,648 694,631"/>
+  </g>
+  <text x="712" y="496" font-size="17" fill="#14532D">El ViewModel sobrevive a la rotación</text>
+  <text x="712" y="546" font-size="17" fill="#14532D">La lógica se prueba sin interfaz gráfica</text>
+  <text x="712" y="596" font-size="17" fill="#14532D">Cada capa cambia sin romper las demás</text>
+  <text x="712" y="646" font-size="17" fill="#14532D">Se puede reemplazar Room o Retrofit</text>
+</svg>

@@ -1,11 +1,12 @@
-﻿package com.upb.taskmanager.ui.screens
+package com.upb.taskmanager.ui.screens
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+<<<<<<< HEAD
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -17,86 +18,250 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+=======
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+>>>>>>> 63488003934b01c4a71f13a0d2cb0f2952c6a6f3
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.upb.taskmanager.model.GestorDeTareas
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.upb.taskmanager.data.datastore.PreferenciasUsuario
 import com.upb.taskmanager.model.Tarea
+import com.upb.taskmanager.ui.components.TareaCard
+import com.upb.taskmanager.ui.components.TareaFormulario
+import com.upb.taskmanager.ui.theme.TaskManagerTheme
+import com.upb.taskmanager.viewmodel.TareasViewModel
+import kotlinx.coroutines.launch
 
 /**
- * Sesion 05: componentes basicos de Compose (Scaffold, TextField, Button, Card).
+ * Sesion 07: layouts y estado - LazyColumn y "state hoisting".
  *
- * Esta pantalla ahora es interactiva: permite agregar tareas nuevas y las
- * muestra en una lista. El estado se mantiene con `remember` (todavia sin
- * ViewModel, eso llega en la Sesion 12); el [GestorDeTareas] vive mientras
- * la pantalla este en composicion.
+ * [TareaListScreen] es el composable "con estado" (stateful): mantiene el
+ * texto del formulario y expone ese estado hacia abajo. Toda la parte visual
+ * sin estado propio vive en [TareaListContent], que solo recibe datos y
+ * callbacks (state hoisting): esto la hace mas facil de reutilizar y de
+ * previsualizar.
+ *
+ * Sesion 08: se agrega el parametro opcional `onTareaClick`, que permite a
+ * quien use esta pantalla navegar a un detalle (ver [com.upb.taskmanager.navigation.AppNavigation]).
+ *
+ * Sesion 12: en vez de crear y recordar un `GestorDeTareas` propio con
+ * `remember`, la pantalla obtiene sus datos de un [TareasViewModel] (por
+ * defecto, uno nuevo con `viewModel()`). Esto permite que el estado de las
+ * tareas sobreviva a cambios de configuracion y se pueda compartir con otras
+ * pantallas del mismo grafo de navegacion.
+ *
+ * Sesion 13: el ViewModel ahora expone un `StateFlow<TareasUiState>` en vez
+ * de una lista suelta. La pantalla se suscribe con `collectAsState()`, que
+ * convierte ese flujo en un `State` de Compose y recompone automaticamente
+ * cada vez que llega un nuevo valor.
+ *
+ * Sesion 15: el ViewModel sincroniza tareas de ejemplo desde un repositorio
+ * remoto al crearse (ver `TareasViewModel.cargarTareasRemotas`). Mientras esa
+ * llamada de red esta en curso, `uiState.cargando` es `true` y esta pantalla
+ * muestra un indicador de progreso.
+ *
+ * Sesion 16: `agregarTarea` ahora devuelve si la operacion tuvo exito; el
+ * campo de texto solo se limpia cuando la tarea se agrego correctamente. Si
+ * hay un `uiState.mensajeError` (por una validacion o una falla de red), esta
+ * pantalla lo muestra en rojo debajo del formulario.
+ *
+ * Sesion 17: se agrega un filtro (todas / pendientes / completadas). La
+ * lista filtrada se calcula con `derivedStateOf`, que solo vuelve a
+ * ejecutar el filtro cuando `uiState.tareas` o `filtroSeleccionado` cambian
+ * de verdad, en vez de recalcularse en cada recomposicion.
+ *
+ * Sesion 22: se agrega la preferencia persistida "mostrar solo pendientes"
+ * ([PreferenciasUsuario], guardada con DataStore). A diferencia de
+ * `filtroSeleccionado` (que se pierde si se cierra la app), esta preferencia
+ * sobrevive entre sesiones: al volver a abrir la app, el filtro de
+ * pendientes se re-aplica automaticamente si el usuario lo dejo activado.
+ *
+ * Sesion 25: el formulario de agregar tarea y la tarjeta de cada tarea se
+ * extrajeron a `ui/components` ([TareaFormulario], [TareaCard]) para poder
+ * reutilizarlos tambien en [com.upb.taskmanager.ui.screens.TareaDetailScreen].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TareaListScreen() {
-    val gestorDeTareas = remember { GestorDeTareas() }
-    var tareas by remember { mutableStateOf(gestorDeTareas.obtenerTareas()) }
+fun TareaListScreen(
+    onTareaClick: (Int) -> Unit = {},
+    tareasViewModel: TareasViewModel = viewModel()
+) {
     var textoNuevaTarea by remember { mutableStateOf("") }
+    var filtroSeleccionado by remember { mutableStateOf(FiltroTareas.TODAS) }
+    val uiState by tareasViewModel.uiState.collectAsState()
 
+    val contexto = LocalContext.current
+    val preferenciasUsuario = remember { PreferenciasUsuario(contexto) }
+    val alcanceCorutinas = rememberCoroutineScope()
+    val mostrarSoloPendientesGuardado by preferenciasUsuario.mostrarSoloPendientes.collectAsState(initial = false)
+
+    // Aplica la preferencia guardada la primera vez que se conoce su valor
+    // (al abrir la pantalla) y cada vez que cambia (al usar el checkbox).
+    LaunchedEffect(mostrarSoloPendientesGuardado) {
+        filtroSeleccionado = if (mostrarSoloPendientesGuardado) FiltroTareas.PENDIENTES else FiltroTareas.TODAS
+    }
+
+    val tareasFiltradas by remember {
+        derivedStateOf {
+            when (filtroSeleccionado) {
+                FiltroTareas.TODAS -> uiState.tareas
+                FiltroTareas.PENDIENTES -> uiState.tareas.filter { !it.completada }
+                FiltroTareas.COMPLETADAS -> uiState.tareas.filter { it.completada }
+            }
+        }
+    }
+
+    TareaListContent(
+        tareas = tareasFiltradas,
+        cargando = uiState.cargando,
+        mensajeError = uiState.mensajeError,
+        textoNuevaTarea = textoNuevaTarea,
+        onTextoNuevaTareaCambiado = { textoNuevaTarea = it },
+        onAgregarTarea = {
+            val seAgrego = tareasViewModel.agregarTarea(textoNuevaTarea)
+            if (seAgrego) {
+                textoNuevaTarea = ""
+            }
+        },
+        onCambiarCompletada = { tarea -> tareasViewModel.alternarCompletada(tarea) },
+        onTareaClick = onTareaClick,
+        filtroSeleccionado = filtroSeleccionado,
+        onFiltroCambiado = { filtroSeleccionado = it },
+        mostrarSoloPendientesGuardado = mostrarSoloPendientesGuardado,
+        onCambiarMostrarSoloPendientes = { nuevoValor ->
+            alcanceCorutinas.launch {
+                preferenciasUsuario.cambiarMostrarSoloPendientes(nuevoValor)
+            }
+        }
+    )
+}
+
+/** Filtros disponibles para la lista de tareas (Sesion 17). */
+enum class FiltroTareas(val etiqueta: String) {
+    TODAS("Todas"),
+    PENDIENTES("Pendientes"),
+    COMPLETADAS("Completadas")
+}
+
+/**
+ * Composable sin estado propio (stateless): recibe todo lo que necesita
+ * mostrar como parametros y notifica las interacciones del usuario mediante
+ * callbacks (`onAgregarTarea`, `onCambiarCompletada`, `onTareaClick`), en vez
+ * de manejar estado internamente.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TareaListContent(
+    tareas: List<Tarea>,
+    textoNuevaTarea: String,
+    onTextoNuevaTareaCambiado: (String) -> Unit,
+    onAgregarTarea: () -> Unit,
+    onCambiarCompletada: (Tarea) -> Unit,
+    onTareaClick: (Int) -> Unit = {},
+    cargando: Boolean = false,
+    mensajeError: String? = null,
+    filtroSeleccionado: FiltroTareas = FiltroTareas.TODAS,
+    onFiltroCambiado: (FiltroTareas) -> Unit = {},
+    mostrarSoloPendientesGuardado: Boolean = false,
+    onCambiarMostrarSoloPendientes: (Boolean) -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Task Manager UPB") })
         }
     ) { paddingDelScaffold ->
+        // Sesion 17: modifier compartido con TareaDetailScreen (ver PantallaComun.kt).
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingDelScaffold)
-                .padding(16.dp),
+            modifier = Modifier.contenidoDePantalla(paddingDelScaffold),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Sesion 25: formulario extraido a ui/components/TareaFormulario.kt.
+            TareaFormulario(
+                valor = textoNuevaTarea,
+                onValorCambiado = onTextoNuevaTareaCambiado,
+                onAgregar = onAgregarTarea
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                TextField(
-                    value = textoNuevaTarea,
-                    onValueChange = { textoNuevaTarea = it },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Nueva tarea") }
-                )
-                Button(onClick = {
-                    if (textoNuevaTarea.isNotBlank()) {
-                        gestorDeTareas.agregarTarea(textoNuevaTarea)
-                        tareas = gestorDeTareas.obtenerTareas()
-                        textoNuevaTarea = ""
+                for (filtro in FiltroTareas.values()) {
+                    TextButton(onClick = { onFiltroCambiado(filtro) }) {
+                        Text(
+                            text = filtro.etiqueta,
+                            style = if (filtro == filtroSeleccionado) {
+                                MaterialTheme.typography.labelLarge
+                            } else {
+                                MaterialTheme.typography.bodyMedium
+                            }
+                        )
                     }
-                }) {
-                    Text("Agregar")
                 }
             }
 
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = mostrarSoloPendientesGuardado,
+                    onCheckedChange = onCambiarMostrarSoloPendientes
+                )
+                Text(
+                    text = "Recordar filtro de pendientes (DataStore)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (mensajeError != null) {
+                Text(
+                    text = mensajeError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (cargando) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                for (tarea in tareas) {
-                    TareaCardBasica(
+                items(tareas, key = { it.id }) { tarea ->
+                    // Sesion 25: tarjeta extraida a ui/components/TareaCard.kt.
+                    TareaCard(
                         tarea = tarea,
-                        onCambiarCompletada = {
-                            gestorDeTareas.alternarCompletada(tarea.id)
-                            tareas = gestorDeTareas.obtenerTareas()
-                        }
+                        onCambiarCompletada = { onCambiarCompletada(tarea) },
+                        onClick = { onTareaClick(tarea.id) }
                     )
                 }
             }
@@ -104,6 +269,7 @@ fun TareaListScreen() {
     }
 }
 
+<<<<<<< HEAD
 @Composable
 private fun TareaCardBasica(tarea: Tarea, onCambiarCompletada: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -130,11 +296,22 @@ private fun TareaCardBasica(tarea: Tarea, onCambiarCompletada: () -> Unit) {
     }
 }
 
+=======
+>>>>>>> 63488003934b01c4a71f13a0d2cb0f2952c6a6f3
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
-fun TareaListScreenPreview() {
-    MaterialTheme {
-        TareaListScreen()
+fun TareaListContentPreview() {
+    TaskManagerTheme {
+        TareaListContent(
+            tareas = listOf(
+                Tarea(id = 1, titulo = "Repasar LazyColumn", completada = true),
+                Tarea(id = 2, titulo = "Aplicar state hoisting", completada = false)
+            ),
+            textoNuevaTarea = "",
+            onTextoNuevaTareaCambiado = {},
+            onAgregarTarea = {},
+            onCambiarCompletada = {}
+        )
     }
 }

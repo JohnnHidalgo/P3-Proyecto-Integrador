@@ -1,0 +1,124 @@
+DESCRIPCIÓN EN TEXTO DEL FLUJO DE LA APLICACIÓN POKÉDEX UPB
+Programación III - Consumo de la PokeAPI con MVVM (Kotlin, Jetpack Compose y Retrofit)
+
+Este documento explica, paso a paso y solo con texto, qué ocurre dentro de la aplicación Pokédex UPB desde que se abre hasta que se ven los pokemones en pantalla. Está pensado para leerse con un lector de pantalla, de principio a fin. Complementa el documento de descripción de los diagramas de MVVM.
+
+DE QUÉ TRATA LA APLICACIÓN
+
+La aplicación muestra una lista de pokemones. Cada pokemon aparece con su imagen, su número y su nombre. Al tocar uno se abre una pantalla de detalle con su imagen grande, sus tipos, su altura, su peso y sus estadísticas. Los datos no están guardados en el teléfono: se piden por internet a una API pública llamada PokeAPI, cuya dirección base es pokeapi punto co, barra api, barra v2.
+
+LOS PARTICIPANTES, EN ORDEN
+
+Cuando se pide un dato, la petición pasa por estas piezas, una detrás de otra. Cuando llega la respuesta, regresa por el mismo camino en sentido contrario.
+
+1. La Vista: las clases PokemonListScreen y PokemonDetailScreen. Dibujan la pantalla y reciben los toques del usuario.
+2. El ViewModel: las clases PokemonListViewModel y PokemonDetailViewModel. Guardan el estado de cada pantalla y deciden cuándo pedir datos.
+3. El Repositorio: la clase PokemonRepository. Es la única que conoce la API. Convierte los datos y atrapa los errores.
+4. El servicio de Retrofit: la interfaz PokeApiService. Describe las dos peticiones que existen y las ejecuta por internet.
+5. La PokeAPI: el servidor externo que responde con datos en formato JSON.
+
+Regla importante: cada pieza solo conoce a la que tiene justo debajo. La Vista no sabe que existe Retrofit. El ViewModel no sabe cómo se dibuja la pantalla. El Repositorio no sabe qué pantalla pidió los datos.
+
+Como en MVVM, hay dos caminos distintos. Por un camino bajan las acciones: el usuario toca algo y se pide un dato. Por el otro camino sube el estado: la respuesta regresa convertida en un estado nuevo, y la pantalla se redibuja sola.
+
+FLUJO 1: ABRIR LA APLICACIÓN Y MOSTRAR LA LISTA
+
+Paso 1. El usuario abre la aplicación. La clase MainActivity aplica el tema de colores, que es rojo y azul, y arranca la navegación. El primer destino se llama lista, y muestra PokemonListScreen.
+
+Paso 2. PokemonListScreen pide su ViewModel con la función viewModel. Si el ViewModel no existe todavía, Android lo crea. Al crearse, ejecuta su bloque init, que llama a la función cargarMas.
+
+Paso 3. La función cargarMas primero comprueba que no esté ya cargando y que todavía haya más pokemones. Si todo está bien, cambia el estado a cargando igual a verdadero. La pantalla, que está observando ese estado, muestra una rueda de progreso en el centro. En la barra superior roja aparece el título Pokédex.
+
+Paso 4. El ViewModel lanza una corrutina con viewModelScope punto launch. Una corrutina permite esperar la respuesta de internet sin congelar la pantalla. Dentro de ella llama al repositorio, pidiendo veinte pokemones. El punto de partida, llamado desplazamiento, es la cantidad de pokemones que ya se tienen: cero la primera vez.
+
+Paso 5. El repositorio llama al servicio de Retrofit. Retrofit hace una petición GET a la dirección pokeapi punto co, barra api, barra v2, barra pokemon, signo de pregunta, limit igual a veinte, y offset igual a cero. Esta petición se ejecuta fuera del hilo principal, así la pantalla sigue fluida.
+
+Paso 6. El servidor responde con un texto JSON. Contiene la cantidad total de pokemones, un enlace a la página siguiente y una lista llamada results. Cada elemento de esa lista tiene solo dos datos: el nombre y una url. Gson, que es el conversor que usa Retrofit, transforma ese texto en objetos de Kotlin llamados DTO. Un DTO es una clase que copia exactamente la forma del JSON.
+
+Paso 7. El repositorio convierte cada elemento en un modelo propio de la aplicación, llamado PokemonResumen. La respuesta no trae la imagen, así que se la construye de esta forma. El número, llamado id, está al final de la url. Por ejemplo, de la url que termina en pokemon barra veinticinco barra, se extrae el número veinticinco. Con ese número se arma la dirección de la imagen, que está en otro sitio llamado el repositorio de sprites de PokeAPI.
+
+Paso 8. El repositorio devuelve el resultado envuelto en un objeto llamado Resultado, en su variante Exito, que contiene la lista de pokemones.
+
+Paso 9. El ViewModel recibe el resultado y actualiza su estado. Añade los pokemones nuevos a los que ya tenía, pone cargando en falso, y marca que hay más pokemones solo si recibió exactamente veinte.
+
+Paso 10. La pantalla recibe el estado nuevo y Compose se recompone, es decir, vuelve a dibujar lo que cambió. Aparece una cuadrícula de dos columnas. Cada tarjeta contiene, de arriba hacia abajo: la imagen del pokemon, que descarga la biblioteca Coil, el número con formato de tres cifras, por ejemplo número cero cero uno, y el nombre con la primera letra en mayúscula, por ejemplo Bulbasaur. Al final de la lista aparece un botón con el texto Cargar más.
+
+FLUJO 2: CARGAR MÁS POKEMONES
+
+Paso 1. El usuario toca el botón Cargar más, al final de la cuadrícula.
+Paso 2. La pantalla llama a la función cargarMas del ViewModel.
+Paso 3. Se repite el recorrido del flujo anterior, pero ahora el desplazamiento es veinte, luego cuarenta, y así sucesivamente.
+Paso 4. Mientras llega la respuesta, el botón se reemplaza por una rueda de progreso al final de la lista. Los pokemones que ya estaban siguen visibles.
+Paso 5. Cuando llegan, se añaden al final de la lista sin borrar los anteriores. Si llegan menos de veinte, significa que ya no hay más y el botón desaparece.
+
+FLUJO 3: CUANDO ALGO SALE MAL
+
+Situación: el teléfono no tiene internet, o el servidor falla.
+
+Paso 1. Retrofit no logra obtener la respuesta y lanza una excepción. Si es un problema de conexión, es de tipo IOException. Si el servidor respondió con un error, es de tipo HttpException y trae un código numérico.
+Paso 2. El repositorio atrapa la excepción. Nunca la deja escapar hacia el ViewModel. La convierte en un Resultado en su variante Error, con un mensaje listo para mostrar. Por ejemplo: No hay conexión a internet. Revisa tu red e inténtalo de nuevo.
+Paso 3. Hay una excepción especial: la cancelación de la corrutina, que ocurre por ejemplo cuando el usuario sale de la pantalla. No se considera un error y se deja pasar.
+Paso 4. El ViewModel guarda el mensaje en el estado y pone cargando en falso.
+Paso 5. La pantalla se redibuja. Si todavía no había ningún pokemon, el mensaje de error ocupa toda la pantalla, en color rojo, con un botón Reintentar debajo. Si ya había pokemones, el mensaje con su botón Reintentar aparece al final de la lista y la lista sigue visible.
+Paso 6. Al tocar Reintentar se vuelve a llamar a cargarMas, y el flujo empieza otra vez.
+
+FLUJO 4: ABRIR EL DETALLE DE UN POKEMON
+
+Paso 1. El usuario toca una tarjeta, por ejemplo la de Pikachu. La tarjeta avisa a la pantalla con el nombre del pokemon.
+Paso 2. La navegación va al destino llamado detalle, barra, pikachu. El nombre viaja dentro de la ruta como un argumento.
+Paso 3. Se muestra PokemonDetailScreen y se crea PokemonDetailViewModel. Navigation Compose deja el argumento disponible dentro de un objeto llamado SavedStateHandle, y el ViewModel lee de ahí el nombre.
+Paso 4. Al crearse, el ViewModel llama a su función cargar. El estado queda en cargando y la pantalla muestra una rueda de progreso. En la barra superior roja aparece una flecha para volver y el título Detalle.
+Paso 5. El repositorio llama a Retrofit, que hace una petición GET a pokeapi punto co, barra api, barra v2, barra pokemon, barra pikachu.
+Paso 6. El servidor responde con un JSON más completo. Gson lo convierte en un DTO de detalle, con el número, el nombre, la altura, el peso, la lista de tipos y la lista de estadísticas.
+Paso 7. El repositorio lo convierte en el modelo PokemonDetalle. En esa conversión, la altura, que llega en decímetros, se divide entre diez para obtener metros. El peso, que llega en hectogramos, se divide entre diez para obtener kilos. Los tipos se ordenan según su posición. La imagen se arma con el número, igual que en la lista.
+Paso 8. El ViewModel guarda el detalle en el estado y pone cargando en falso.
+Paso 9. La pantalla se redibuja y muestra, de arriba hacia abajo:
+- La imagen grande del pokemon.
+- Su número y su nombre.
+- Una o dos etiquetas redondeadas con el tipo, cada una con su color y su nombre en español. Por ejemplo, Eléctrico en amarillo.
+- Dos datos: la altura en metros y el peso en kilos.
+- El título Estadísticas base, y debajo seis filas: PS, Ataque, Defensa, Ataque especial, Defensa especial y Velocidad. Cada fila tiene el nombre, el valor numérico y una barra horizontal. La barra está más llena cuanto mayor es el valor, tomando doscientos cincuenta y cinco como el máximo.
+Paso 10. Si falla, se muestra el mismo mensaje de error con el botón Reintentar, y ese botón vuelve a llamar a cargar.
+Paso 11. Al tocar la flecha de la barra superior se vuelve a la lista. La lista conserva sus pokemones y no vuelve a pedirlos a internet.
+
+FLUJO 5: GIRAR LA PANTALLA
+
+Cuando el usuario gira el teléfono, Android destruye y vuelve a crear la pantalla. Pero el ViewModel no se destruye: sobrevive al giro. Por eso la lista no se vuelve a pedir a internet. La nueva pantalla se suscribe al mismo ViewModel y recibe el mismo estado que ya tenía. Este es uno de los motivos principales para usar MVVM.
+
+QUÉ HACE Y QUÉ NO SABE CADA CLASE
+
+PokemonListScreen y PokemonDetailScreen: dibujan el estado y avisan de los toques. No saben nada de Retrofit ni de internet.
+
+PokemonListViewModel y PokemonDetailViewModel: guardan el estado en un StateFlow, que es un contenedor de solo lectura que avisa cuando cambia. Lanzan las corrutinas. No saben nada de Compose.
+
+PokemonRepository: pide los datos, los convierte y atrapa los errores. No sabe qué pantalla los pidió.
+
+PokeApiService: describe las dos peticiones. La primera es la lista, con los parámetros limit y offset. La segunda es el detalle, con el nombre en la ruta.
+
+RetrofitClient: crea una única instancia de Retrofit para toda la aplicación y activa el registro de las peticiones en Logcat, filtrando por la palabra OkHttp.
+
+Mapeadores: convierten los DTO, que copian el JSON, en los modelos de la aplicación.
+
+Resultado: un objeto con dos variantes, Exito, que lleva los datos, y Error, que lleva un mensaje.
+
+PUNTOS QUE CONVIENE RECORDAR
+
+- La aplicación necesita el permiso de internet declarado en el archivo AndroidManifest. Sin él, las peticiones fallan.
+- La dirección base de Retrofit debe terminar con una barra diagonal.
+- La red nunca se usa en el hilo principal.
+- El estado se reemplaza por una copia nueva cada vez, nunca se modifica la lista existente. Así Compose detecta el cambio.
+- La pantalla no cambia por sí sola cuando el usuario toca algo. Cambia cuando el ViewModel le entrega un estado nuevo.
+
+GLOSARIO RÁPIDO
+
+API: un servicio de internet al que un programa le pide datos.
+JSON: un formato de texto para intercambiar datos, con pares de nombre y valor.
+Retrofit: la biblioteca que convierte una interfaz de Kotlin en peticiones a una API y entrega la respuesta como objetos.
+Gson: el conversor que transforma el texto JSON en objetos de Kotlin.
+Corrutina: una tarea que puede pausarse mientras espera, sin congelar la pantalla.
+Coil: la biblioteca que descarga y muestra imágenes a partir de una dirección de internet.
+Paginación: pedir los datos por partes, veinte a la vez, en lugar de todos juntos.
+Argumento de navegación: un dato que viaja con la ruta de una pantalla a otra, como el nombre del pokemon.
+Recomposición: cuando Compose vuelve a dibujar una parte de la pantalla porque el estado cambió.
+
+FIN DEL DOCUMENTO

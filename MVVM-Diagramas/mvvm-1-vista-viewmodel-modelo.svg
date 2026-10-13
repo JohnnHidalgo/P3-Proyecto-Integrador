@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 700" width="1240" height="700" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D9480F"/>
+    </marker>
+    <marker id="arrTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0F766E"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="700" fill="#FFFFFF"/>
+
+  <text x="620" y="48" text-anchor="middle" font-size="28" font-weight="700" fill="#1B3A8A">MVVM: tres responsabilidades, un solo sentido de dependencia</text>
+  <text x="620" y="78" text-anchor="middle" font-size="16" fill="#64748B">Ejemplo real: proyecto Task Manager UPB (Kotlin + Jetpack Compose)</text>
+
+  <!-- ============ VISTA ============ -->
+  <rect x="30" y="110" width="300" height="390" rx="12" fill="#E8EEFB" stroke="#8FA9E6" stroke-width="2"/>
+  <rect x="30" y="110" width="300" height="66" rx="12" fill="#1E4DB7"/>
+  <rect x="30" y="150" width="300" height="26" fill="#1E4DB7"/>
+  <text x="50" y="140" font-size="22" font-weight="700" fill="#FFFFFF">VISTA (View)</text>
+  <text x="50" y="163" font-size="14" fill="#FFFFFF" fill-opacity="0.9">Lo que el usuario ve y toca</text>
+
+  <text x="50" y="206" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">QUÉ HACE</text>
+  <text x="50" y="232" font-size="15" fill="#1E293B">• Dibuja el estado recibido</text>
+  <text x="50" y="260" font-size="15" fill="#1E293B">• Captura clics y texto</text>
+  <text x="50" y="288" font-size="15" fill="#1E293B">• Sin reglas de negocio</text>
+  <line x1="50" y1="312" x2="310" y2="312" stroke="#8FA9E6"/>
+
+  <text x="50" y="338" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">EN EL PROYECTO</text>
+  <text x="50" y="366" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#1E4DB7">TareaListScreen</text>
+  <text x="50" y="388" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#1E4DB7">TareaCard</text>
+  <line x1="50" y1="404" x2="310" y2="404" stroke="#8FA9E6"/>
+
+  <text x="50" y="428" font-size="12" font-weight="700" fill="#B42318" letter-spacing="1">NO SABE NADA DE</text>
+  <text x="50" y="456" font-size="15" fill="#1E293B">Room, Retrofit ni cómo se</text>
+  <text x="50" y="478" font-size="15" fill="#1E293B">validan o guardan los datos</text>
+
+  <!-- ============ VIEWMODEL ============ -->
+  <rect x="470" y="110" width="300" height="390" rx="12" fill="#FEF3C7" stroke="#F5C84B" stroke-width="2"/>
+  <rect x="470" y="110" width="300" height="66" rx="12" fill="#A16207"/>
+  <rect x="470" y="150" width="300" height="26" fill="#A16207"/>
+  <text x="490" y="140" font-size="22" font-weight="700" fill="#FFFFFF">VIEWMODEL</text>
+  <text x="490" y="163" font-size="14" fill="#FFFFFF" fill-opacity="0.9">Estado de pantalla + eventos</text>
+
+  <text x="490" y="206" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">QUÉ HACE</text>
+  <text x="490" y="232" font-size="15" fill="#1E293B">• Expone StateFlow&lt;TareasUiState&gt;</text>
+  <text x="490" y="260" font-size="15" fill="#1E293B">• Recibe eventos de la Vista</text>
+  <text x="490" y="288" font-size="15" fill="#1E293B">• Sobrevive a la rotación</text>
+  <line x1="490" y1="312" x2="750" y2="312" stroke="#F5C84B"/>
+
+  <text x="490" y="338" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">EN EL PROYECTO</text>
+  <text x="490" y="366" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#A16207">TareasViewModel</text>
+  <text x="490" y="388" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#A16207">TareasUiState</text>
+  <line x1="490" y1="404" x2="750" y2="404" stroke="#F5C84B"/>
+
+  <text x="490" y="428" font-size="12" font-weight="700" fill="#B42318" letter-spacing="1">NO SABE NADA DE</text>
+  <text x="490" y="456" font-size="15" fill="#1E293B">Composables ni de cómo se</text>
+  <text x="490" y="478" font-size="15" fill="#1E293B">dibuja la pantalla</text>
+
+  <!-- ============ MODELO ============ -->
+  <rect x="910" y="110" width="300" height="390" rx="12" fill="#E6F5EC" stroke="#8FD0AB" stroke-width="2"/>
+  <rect x="910" y="110" width="300" height="66" rx="12" fill="#1F7A4D"/>
+  <rect x="910" y="150" width="300" height="26" fill="#1F7A4D"/>
+  <text x="930" y="140" font-size="22" font-weight="700" fill="#FFFFFF">MODELO (Model)</text>
+  <text x="930" y="163" font-size="14" fill="#FFFFFF" fill-opacity="0.9">Datos y reglas de negocio</text>
+
+  <text x="930" y="206" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">QUÉ HACE</text>
+  <text x="930" y="232" font-size="15" fill="#1E293B">• Define Tarea y su lógica</text>
+  <text x="930" y="260" font-size="15" fill="#1E293B">• Room (local) y Retrofit (red)</text>
+  <text x="930" y="288" font-size="15" fill="#1E293B">• Room: fuente única de verdad</text>
+  <line x1="930" y1="312" x2="1190" y2="312" stroke="#8FD0AB"/>
+
+  <text x="930" y="338" font-size="12" font-weight="700" fill="#64748B" letter-spacing="1">EN EL PROYECTO</text>
+  <text x="930" y="366" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#1F7A4D">GestorDeTareas</text>
+  <text x="930" y="388" font-size="15" font-weight="700" font-family="Consolas, 'Courier New', monospace" fill="#1F7A4D">TareaDao</text>
+  <line x1="930" y1="404" x2="1190" y2="404" stroke="#8FD0AB"/>
+
+  <text x="930" y="428" font-size="12" font-weight="700" fill="#B42318" letter-spacing="1">NO SABE NADA DE</text>
+  <text x="930" y="456" font-size="15" fill="#1E293B">Quién muestra los datos ni</text>
+  <text x="930" y="478" font-size="15" fill="#1E293B">cómo se ven en pantalla</text>
+
+  <!-- ============ FLECHAS Vista <-> ViewModel ============ -->
+  <text x="400" y="216" text-anchor="middle" font-size="15" font-weight="700" fill="#D9480F">Eventos</text>
+  <text x="400" y="234" text-anchor="middle" font-size="12" font-family="Consolas, 'Courier New', monospace" fill="#D9480F">agregarTarea()</text>
+  <line x1="338" y1="250" x2="462" y2="250" stroke="#D9480F" stroke-width="3" marker-end="url(#arrOrange)"/>
+
+  <line x1="462" y1="380" x2="338" y2="380" stroke="#0F766E" stroke-width="3" marker-end="url(#arrTeal)"/>
+  <text x="400" y="406" text-anchor="middle" font-size="15" font-weight="700" fill="#0F766E">Estado</text>
+  <text x="400" y="424" text-anchor="middle" font-size="12" font-family="Consolas, 'Courier New', monospace" fill="#0F766E">collectAsState()</text>
+
+  <!-- ============ FLECHAS ViewModel <-> Modelo ============ -->
+  <text x="840" y="216" text-anchor="middle" font-size="15" font-weight="700" fill="#D9480F">Pide o guarda</text>
+  <text x="840" y="234" text-anchor="middle" font-size="12" font-family="Consolas, 'Courier New', monospace" fill="#D9480F">suspend fun</text>
+  <line x1="778" y1="250" x2="902" y2="250" stroke="#D9480F" stroke-width="3" marker-end="url(#arrOrange)"/>
+
+  <line x1="902" y1="380" x2="778" y2="380" stroke="#0F766E" stroke-width="3" marker-end="url(#arrTeal)"/>
+  <text x="840" y="406" text-anchor="middle" font-size="15" font-weight="700" fill="#0F766E">Datos</text>
+  <text x="840" y="424" text-anchor="middle" font-size="12" font-family="Consolas, 'Courier New', monospace" fill="#0F766E">Flow&lt;List&lt;Tarea&gt;&gt;</text>
+
+  <!-- ============ BANNER ============ -->
+  <rect x="30" y="530" width="1180" height="136" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+  <text x="60" y="564" font-size="18" font-weight="700" fill="#1B3A8A">Regla de oro: las dependencias apuntan en una sola dirección</text>
+  <text x="60" y="594" font-size="16" fill="#1E293B">Vista → ViewModel → Modelo. El Modelo nunca conoce a la Vista y el ViewModel nunca conoce a los Composables.</text>
+
+  <line x1="60" y1="628" x2="104" y2="628" stroke="#D9480F" stroke-width="3" marker-end="url(#arrOrange)"/>
+  <text x="116" y="633" font-size="15" fill="#1E293B">Eventos y acciones: van de la Vista hacia el Modelo</text>
+  <line x1="640" y1="628" x2="684" y2="628" stroke="#0F766E" stroke-width="3" marker-end="url(#arrTeal)"/>
+  <text x="696" y="633" font-size="15" fill="#1E293B">Estado y datos: regresan hacia la Vista</text>
+</svg>

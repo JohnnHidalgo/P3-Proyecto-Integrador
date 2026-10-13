@@ -1,0 +1,175 @@
+DESCRIPCIÓN EN TEXTO DE LOS DIAGRAMAS DE MVVM
+Programación III - Proyecto Task Manager UPB (Kotlin y Jetpack Compose)
+
+Este documento describe, solo con texto, los cuatro diagramas que explican la arquitectura MVVM. Está pensado para leerse con un lector de pantalla, de principio a fin. No hace falta ver los colores ni la posición exacta de las cajas: todo lo importante está dicho en las frases.
+
+CÓMO LEER ESTE DOCUMENTO
+
+Cada diagrama tiene cuatro partes: para qué sirve, qué elementos contiene, cómo se relacionan y la idea principal que debes recordar.
+
+Al final hay un glosario con las palabras técnicas y la explicación de dos conceptos que aparecen en clase: Retrofit y el permiso de internet.
+
+RESUMEN EN UNA SOLA IDEA
+
+MVVM divide una aplicación en tres capas: la Vista, el ViewModel y el Modelo. La Vista dibuja y recibe los toques del usuario. El ViewModel guarda el estado de la pantalla y decide qué hacer. El Modelo guarda y consigue los datos. Cada capa solo conoce a la que tiene debajo, nunca a la de arriba.
+
+DIAGRAMA 1: VISTA, VIEWMODEL Y MODELO
+
+Para qué sirve: presenta las tres capas de MVVM, qué hace cada una, qué clase del proyecto la representa y qué cosas no debe saber.
+
+Cómo está organizado: tres cajas grandes colocadas en fila, de izquierda a derecha, en este orden: Vista, ViewModel y Modelo. Entre la primera y la segunda hay dos flechas. Entre la segunda y la tercera también hay dos flechas. En cada pareja, una flecha va hacia la derecha y la otra hacia la izquierda. Debajo de las tres cajas hay un recuadro ancho con una regla y una leyenda.
+
+Caja 1, a la izquierda: VISTA (View). Subtítulo: lo que el usuario ve y toca.
+Qué hace:
+- Dibuja el estado que recibe.
+- Captura clics y texto.
+- No tiene reglas de negocio.
+En el proyecto: las clases TareaListScreen y TareaCard.
+No sabe nada de: Room, Retrofit, ni de cómo se validan o se guardan los datos.
+
+Caja 2, al centro: VIEWMODEL. Subtítulo: estado de pantalla más eventos.
+Qué hace:
+- Expone un StateFlow de TareasUiState, es decir, un flujo de solo lectura con el estado actual de la pantalla.
+- Recibe los eventos que envía la Vista.
+- Sobrevive a la rotación de la pantalla.
+En el proyecto: las clases TareasViewModel y TareasUiState.
+No sabe nada de: los Composables, ni de cómo se dibuja la pantalla.
+
+Caja 3, a la derecha: MODELO (Model). Subtítulo: datos y reglas de negocio.
+Qué hace:
+- Define la tarea y su lógica.
+- Usa Room para guardar datos en el teléfono y Retrofit para pedirlos por internet.
+- Room es la fuente única de verdad.
+En el proyecto: las clases GestorDeTareas y TareaDao.
+No sabe nada de: quién muestra los datos ni cómo se ven en pantalla.
+
+Las flechas entre las cajas:
+- Entre la Vista y el ViewModel, la flecha hacia la derecha se llama Eventos, por ejemplo agregarTarea. Es la Vista avisando de algo que hizo el usuario.
+- Entre la Vista y el ViewModel, la flecha hacia la izquierda se llama Estado, y se recibe con collectAsState. Es el ViewModel entregando a la Vista lo que debe dibujar.
+- Entre el ViewModel y el Modelo, la flecha hacia la derecha se llama Pide o guarda, con funciones suspend. Es el ViewModel solicitando datos o pidiendo guardarlos.
+- Entre el ViewModel y el Modelo, la flecha hacia la izquierda se llama Datos, y es un Flow de lista de tareas. Es el Modelo devolviendo los datos.
+
+Recuadro inferior: la regla de oro. Las dependencias apuntan en una sola dirección: de la Vista al ViewModel y del ViewModel al Modelo. El Modelo nunca conoce a la Vista, y el ViewModel nunca conoce a los Composables. Una leyenda indica que las flechas de eventos y acciones van de la Vista hacia el Modelo, y que las flechas de estado y datos regresan hacia la Vista.
+
+Idea principal: las órdenes viajan en un sentido y la información regresa por otro camino, y ninguna capa conoce a la que está por encima de ella.
+
+DIAGRAMA 2: FLUJO AL AGREGAR UNA TAREA, PASO A PASO
+
+Para qué sirve: sigue un caso concreto de principio a fin. El usuario escribe un título y pulsa el botón Agregar. El diagrama muestra todo lo que ocurre dentro de la aplicación hasta que la lista se actualiza.
+
+Cómo está organizado: es un diagrama de secuencia. Hay cuatro participantes colocados de izquierda a derecha. De cada uno cae una línea punteada vertical, y los mensajes son flechas horizontales entre esas líneas. El tiempo avanza de arriba hacia abajo, así que el paso 1 está arriba y el paso 8 abajo.
+
+Los cuatro participantes, de izquierda a derecha:
+1. Vista, representada por TareaListScreen.
+2. ViewModel, representado por TareasViewModel.
+3. Modelo, representado por GestorDeTareas.
+4. Datos, representados por Room y TareaDao.
+
+Los ocho pasos, en orden:
+Paso 1. La Vista envía al ViewModel el mensaje agregarTarea con el título. Es una flecha hacia la derecha. Pertenece al camino de las acciones.
+Paso 2. En el ViewModel hay una nota: valida si el título está vacío. No hay flecha, ocurre dentro del ViewModel.
+Paso 3. El ViewModel envía al Modelo el mensaje agregarTarea con el título. Flecha hacia la derecha.
+Paso 4. El Modelo envía a los Datos el mensaje insertar, con una TareaEntity. Flecha hacia la derecha. Aquí se guarda la tarea en la base de datos.
+Paso 5. Los Datos responden al Modelo: la función observarTodas emite la lista actualizada. Flecha punteada hacia la izquierda. Pertenece al camino del estado.
+Paso 6. El Modelo entrega al ViewModel un Flow con la lista nueva de tareas. Flecha punteada hacia la izquierda.
+Paso 7. El ViewModel entrega a la Vista el nuevo estado, el uiState. Flecha punteada hacia la izquierda.
+Paso 8. En la Vista hay una nota: Compose se recompone y dibuja la lista nueva.
+
+Recuadro inferior: la Vista nunca modifica los datos directamente. Las acciones bajan por un camino, que son los pasos 1 a 4, y el estado nuevo regresa por otro, que son los pasos 5 a 7. A esto se le llama flujo unidireccional.
+
+Idea principal: la pantalla no cambia por sí misma cuando el usuario toca el botón. Cambia cuando le llega un estado nuevo desde el ViewModel.
+
+DIAGRAMA 3: SIN MVVM Y CON MVVM
+
+Para qué sirve: compara cómo queda la aplicación antes y después de reestructurarla con MVVM, y explica por qué conviene hacerlo.
+
+Cómo está organizado: dos paneles grandes, uno junto al otro. A la izquierda está el panel SIN MVVM y a la derecha el panel CON MVVM. En el centro, entre los dos, hay una flecha ancha que apunta de izquierda a derecha, indicando el cambio de un estado al otro.
+
+Panel izquierdo: SIN MVVM. Subtítulo: todo mezclado dentro del Composable.
+Contiene un solo recuadro llamado TareaListScreen, un solo archivo, y dentro de él cuatro franjas apiladas:
+- Dibuja la interfaz con Compose.
+- Guarda el estado con remember.
+- Valida y aplica reglas de negocio.
+- Llama a Room y a Retrofit directamente.
+Debajo hay una lista de cuatro problemas, cada uno marcado con una equis:
+- El estado se pierde al rotar la pantalla.
+- Es imposible probar la lógica sin un emulador.
+- Es un archivo enorme: cada cambio rompe algo.
+- La lógica no se puede reutilizar.
+
+Panel derecho: CON MVVM. Subtítulo: cada capa con una sola responsabilidad.
+Contiene tres cajas apiladas de arriba hacia abajo, unidas por flechas que apuntan hacia abajo:
+- Vista, con Compose: dibuja el estado y envía los eventos del usuario.
+- ViewModel: guarda el estado y aplica la lógica de la pantalla.
+- Modelo: GestorDeTareas, Room y Retrofit.
+Debajo hay una lista de cuatro beneficios, cada uno marcado con una palomita:
+- El ViewModel sobrevive a la rotación.
+- La lógica se prueba sin interfaz gráfica.
+- Cada capa cambia sin romper las demás.
+- Se puede reemplazar Room o Retrofit.
+
+Idea principal: al separar responsabilidades, la aplicación es más fácil de mantener, de probar y de cambiar.
+
+DIAGRAMA 4: LAS CAPAS Y PAQUETES DEL PROYECTO
+
+Para qué sirve: muestra dónde vive cada capa de MVVM dentro de las carpetas, llamadas paquetes, del proyecto Task Manager UPB, y en qué sesión del curso se construye cada una.
+
+Cómo está organizado: cuatro filas apiladas de arriba hacia abajo. Entre una fila y la siguiente hay una flecha que apunta hacia abajo, porque las flechas siempre van hacia abajo: cada capa depende solo de las que están debajo. Todo el código está dentro del paquete com punto upb punto taskmanager.
+
+Fila 1: VISTA, con Jetpack Compose. Sesiones 4 a 8 y 25. Contiene cuatro cajas pequeñas:
+- ui.screens, con TareaListScreen y TareaDetailScreen.
+- ui.components, con TareaCard y TareaFormulario.
+- ui.theme, con TaskManagerTheme, Color y Type.
+- navigation, con AppNavigation.
+Flecha hacia abajo con el texto: observa uiState y envía eventos.
+
+Fila 2: VIEWMODEL, en el paquete viewmodel. Sesiones 12 y 13. Contiene TareasViewModel y TareasUiState. Expone la propiedad uiState, que es un StateFlow de TareasUiState.
+Flecha hacia abajo con el texto: llama a funciones suspend y recibe un Flow.
+
+Fila 3: MODELO, en el paquete model. Sesiones 3 y 23. Contiene Tarea y GestorDeTareas. Incluye la función observarTareas, que devuelve un Flow de lista de Tarea.
+Dos flechas hacia abajo, una hacia cada caja de la fila siguiente.
+
+Fila 4: las fuentes de datos, con tres cajas:
+- data.local, con Room. Sesiones 20 y 21. Contiene TareaEntity, TareaDao, TareaDatabase y TareasLocalRepository. Es la fuente única de verdad de las tareas.
+- data.remote, con Retrofit. Sesiones 14 y 15. Contiene ApiService, RetrofitInstance, TareaDto y TareasRemoteRepository. Solo aporta datos de ejemplo al inicio.
+- data.datastore, situada a la derecha de las otras dos. Sesión 22. Contiene PreferenciasUsuario, que guarda la preferencia de pantalla mostrar solo pendientes.
+
+Una excepción: una línea punteada va desde la Vista, saltándose el ViewModel y el Modelo, hasta data.datastore. Una nota a la derecha la explica. La pantalla lee DataStore directamente porque es una preferencia de interfaz y no un dato de negocio.
+
+Idea principal: cada capa de MVVM tiene su propia carpeta. Para saber dónde va un archivo, pregúntate si dibuja algo, si guarda estado de pantalla o si maneja datos.
+
+GLOSARIO
+
+Vista: la parte de la aplicación que el usuario ve y toca. En este curso se escribe con Jetpack Compose.
+
+ViewModel: la clase que guarda el estado de una pantalla y recibe sus eventos. Sobrevive a la rotación del teléfono.
+
+Modelo: los datos y las reglas de negocio. Incluye la base de datos local y la comunicación con internet.
+
+Estado, o uiState: un objeto que describe todo lo que la pantalla debe mostrar en un momento dado. Por ejemplo, la lista de tareas, si está cargando y si hay un error.
+
+Evento: algo que hace el usuario, como tocar un botón o escribir texto. La Vista lo envía al ViewModel.
+
+StateFlow: un contenedor de solo lectura que guarda el último estado y avisa a quien lo observa cada vez que cambia.
+
+Flow: un flujo de valores que llegan con el tiempo. Por ejemplo, la lista de tareas que se vuelve a emitir cada vez que cambia la base de datos.
+
+Función suspend: una función que puede pausarse mientras espera algo, como una respuesta de internet, sin congelar la pantalla.
+
+Composable: una función de Jetpack Compose que dibuja una parte de la interfaz.
+
+Recomposición: cuando Compose vuelve a dibujar una parte de la pantalla porque el estado cambió.
+
+Room: la biblioteca que guarda datos en una base de datos dentro del teléfono.
+
+DTO: una clase que copia exactamente la forma del JSON que devuelve una API.
+
+RETROFIT
+
+Retrofit es una biblioteca para Android, creada por la empresa Square, que sirve para hablar con una API por internet. Tú describes en una interfaz de Kotlin las direcciones de la API, por ejemplo: esta función hace una petición GET a la ruta pokemon. Retrofit se encarga de armar la petición, enviarla, recibir la respuesta y convertir el JSON en objetos de Kotlin. Es como un mensajero que sabe ir a buscar los datos y traerlos ya ordenados. Sin Retrofit habría que escribir a mano la conexión de red y leer el JSON texto por texto.
+
+EL PERMISO DE INTERNET
+
+En Android, una aplicación no puede usar internet si no lo declara antes. Esa declaración es una línea en el archivo AndroidManifest punto xml: uses-permission con el nombre android.permission.INTERNET. Es un permiso normal: se concede solo al instalar la app y el usuario no ve ninguna ventana de confirmación. Si se olvida esa línea, el programa compila sin problema, pero al ejecutarlo las peticiones fallan. El error suele aparecer como un fallo de conexión o con el mensaje Permission denied, missing INTERNET permission. Por eso es un olvido típico y difícil de notar. En los proyectos de este curso la línea ya está incluida.
+
+FIN DEL DOCUMENTO
